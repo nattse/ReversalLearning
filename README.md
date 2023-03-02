@@ -32,4 +32,24 @@ All experiment conditions are set beforehand in the *config.csv* file. Each colu
 
 **Duration** | any positive integer or -1 | Duration of time (ms) after which we advance to the next stage. If using Number of Presses, set to -1
 
+**Arduino ID Port** | any integer | Also can be found using `sudo dmesg | tail`. Only need to enter this in the first column
 
+**Cam ID** | any integer | `v4l2-ctl --list-devices`. Only need to enter this in the first column
+
+____________________________________________________________________________________________________________________________
+
+An example config.csv would be as follows:
+
+|  | Stage 1 | Stage 2 |
+| :---         |     :---:      |          ---: |
+| Right Lever Out  |1|1|
+| Right Lever Reward % |100|50|
+| Left Lever Out |1|1|
+| Left Lever Reward % |100|75|
+| Switch stage at: |||
+| Number of presses |-1|30|
+| Duration |600000|-1|
+| Arduino ID Port |0||
+| Cam ID |2||
+
+Using this configuation, we would start at Stage 1 with both levers being presented and rewarded 100% of the time. This would last for 600 seconds, after which we swtich to Stage 2. In this stage both levers are still presented, but the reward probability of the right lever drops to 50%, and the left lever drops to 75%. After 30 lever presses, all processes are stopped and the video recording ends. 
