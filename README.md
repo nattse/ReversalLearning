@@ -53,3 +53,6 @@ An example config.csv would be as follows:
 | Cam ID |2||
 
 Using this configuation, we would start at Stage 1 with both levers being presented and rewarded 100% of the time. This would last for 600 seconds, after which we swtich to Stage 2. In this stage both levers are still presented, but the reward probability of the right lever drops to 50%, and the left lever drops to 75%. After 30 lever presses, all processes are stopped and the video recording ends. 
+
+## Running the experiment
+Using Terminal, move to where these files are stored using `cd`. Run `python3 working_send_and_recieve.py filename` replacing filename with whatever you want the resulting .csv and video files to be titled. 
