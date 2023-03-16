@@ -222,13 +222,13 @@ void check_food() {
   }
 }
 
-//Will not dispense if one lever is used three times or more, consecutively, useful during training when both levers are 100% rewarded
-//If this behavior is not desired, remove "&& consec_right < 3" from below, or change to a different number of consecutive presses
+//Will not dispense if one lever is used 5 times or more, consecutively, useful during training when both levers are 100% rewarded
+//If this behavior is not desired, remove "&& consec_right < 5" from below, or change to a different number of consecutive presses
 void reward_calculation(){
   //Serial.println("rewardtime");
   long r = random(100);
   if (session_press == 1) {
-    if (r < RightLeverProb[step] && consec_right < 3) {
+    if (r < RightLeverProb[step] && consec_right < 5) {
       food_delay = true; // handle in func
       food_delay_timer = millis(); // handle in func
     }  
@@ -237,7 +237,7 @@ void reward_calculation(){
     }
   }
   else if (session_press == 2) {
-    if (r < LeftLeverProb[step] && consec_left < 3) {
+    if (r < LeftLeverProb[step] && consec_left < 5) {
       food_delay = true;
       food_delay_timer = millis();
     }
