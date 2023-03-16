@@ -42,9 +42,9 @@ An example config.csv would be as follows:
 
 |  | Stage 1 | Stage 2 |
 | :---         |     :---:      |          ---: |
-| Right Lever Out  |1|1|
+| Right Lever Out  |yes|yes|
 | Right Lever Reward % |100|50|
-| Left Lever Out |1|1|
+| Left Lever Out |yes|yes|
 | Left Lever Reward % |100|75|
 | Switch stage at: |||
 | Number of presses |-1|30|
