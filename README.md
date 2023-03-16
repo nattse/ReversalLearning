@@ -12,7 +12,7 @@ All experiment conditions are set beforehand in the *config.csv* file. Each colu
 - Nose poke into the food receptacle begins the trial
 - Levers are presented
 - Upon lever press, all levers are retracted
-- Food pellet is dispensed depending on the pressed lever's probability of reward
+- Food pellet is dispensed depending on the pressed lever's probability of reward (or if that same lever has been pressed 5 or more times in a row; see function reward_calculation() in combined_recieve_and_execute.ino to turn off)
 - New trial initiation is blocked for three seconds after reward is dispensed (*need to consider that a mouse may be slow to retrieve the food at first and so may trigger a new trial upon retrieval - something we'll need to work out through trial and error*)
 - Check to see if ready to move to next stage, and if so, change conditions (e.g. levers presented/reward probability) according to the next stage. Otherwise, wait for nose poke to begin another trial
 
@@ -55,4 +55,4 @@ An example config.csv would be as follows:
 Using this configuration, we would start at Stage 1 with both levers being presented and rewarded 100% of the time. This would last for 600 seconds, after which we switch to Stage 2. In this stage both levers are still presented, but the reward probability of the right lever drops to 50%, and the left lever drops to 75%. After 30 lever presses, all processes are stopped and the video recording ends. 
 
 ## Running the experiment
-Using Terminal, move to where these files are stored using `cd`. Run `python3 working_send_and_recieve.py filename` replacing filename with whatever you want the resulting .csv and video files to be titled. 
+Using Terminal, move to where these files are stored using `cd`. Run `python3 working_send_and_recieve.py filename` replacing filename with whatever you want the resulting .csv and video files to be titled. Output should give times when nose is in food magazine, when levers are pressed, and whenever the stage changes. 
