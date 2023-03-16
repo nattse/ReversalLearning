@@ -211,18 +211,19 @@ void check_food() {
       digitalWrite(dispense_control, HIGH);
       dispense_on = true;
       dispense_time = millis();
-      Serial.println("dispensing...");     
+      //Serial.println("dispensing...");     
     }    
     else if ((millis() - dispense_time) > 5){
       digitalWrite(dispense_control, LOW);
       dispense_on = false;    
       food_delay = false;  
-      Serial.println("finished dispensing");
+      //Serial.println("finished dispensing");
     }
   }
 }
 
-//Will not dispense if one lever is used three times or more, consecutively
+//Will not dispense if one lever is used three times or more, consecutively, useful during training when both levers are 100% rewarded
+//If this behavior is not desired, remove "&& consec_right < 3" from below, or change to a different number of consecutive presses
 void reward_calculation(){
   //Serial.println("rewardtime");
   long r = random(100);
