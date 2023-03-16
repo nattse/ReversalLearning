@@ -13,8 +13,8 @@ All experiment conditions are set beforehand in the *config.csv* file. Each colu
 - Levers are presented
 - Upon lever press, all levers are retracted
 - Food pellet is dispensed depending on the pressed lever's probability of reward
-- Check to see if ready to move to next stage, and if so, change conditions (e.g. levers presented/reward probability) according to the next stage
 - New trial initiation is blocked for three seconds after reward is dispensed (*need to consider that a mouse may be slow to retrieve the food at first and so may trigger a new trial upon retrieval - something we'll need to work out through trial and error*)
+- Check to see if ready to move to next stage, and if so, change conditions (e.g. levers presented/reward probability) according to the next stage. Otherwise, wait for nose poke to begin another trial
 
 ### Using config.csv
 
