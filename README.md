@@ -30,7 +30,7 @@ All experiment conditions are set beforehand in the *config.csv* file. Each colu
 
 **Number of presses** | any positive integer or -1 | Total number of lever presses needed to advance to the next stage. If using Duration instead, set to -1
 
-**Duration** | any positive integer or -1 | Duration of time (ms) after which we advance to the next stage. If using Number of Presses, set to -1
+**Duration** | any positive integer or -1 | Duration of time (seconds) after which we advance to the next stage. If using Number of Presses, set to -1
 
 **Arduino ID Port** | any integer | Also can be found using `sudo dmesg | tail`. Only need to enter this in the first column
 
@@ -48,7 +48,7 @@ An example config.csv would be as follows:
 | Left Lever Reward % |100|75|
 | Switch stage at: |||
 | Number of presses |-1|30|
-| Duration |600000|-1|
+| Duration |600|-1|
 | Arduino ID Port |0||
 | Cam ID |2||
 
