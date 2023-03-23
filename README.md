@@ -1,6 +1,7 @@
-# Reversal Learning/Conditioning
+# Overview
+Behavioral tasks such as sign tracking and reversal learning are complex both in the information they provide and in the methodology/protocols they can require. As such, we wanted to gain better control over data collection (e.g. sampling frequency, video quality and framerate) while at the same time making the application of protocols more human-readable. In order to accomplish these tasks, we have created our own operant conditioning chambers. Protocol instructions and instrument readings are routed through an Arduino to a single laptop that time-syncs the data with high-resolution video capture. 
 
-The objective of this code repository is to give orders to and recieve information from multiple instruments in order to test rodent cue-reward associations in a dynamic manner.
+The objective of this specific code repository is to test rodent reversal learning.
 
 ## First time setup
 These instructions assume you have downloaded this repository, the necessary packages, and the Arduino IDE. 
@@ -68,3 +69,6 @@ Relays: **[HiLetgo 5V One Channel Relay Module With optocoupler Support High or 
 IR Emitter and Receiver: **[Chanzon 5mm IR Infrared LED Diode Emitter + Receiver](https://www.amazon.com/Emitter-Receiver-VS1838B-Infrared-Raspberry/dp/B07TLBJR5J?th=1)**
 
 ![alt text](operant_chamber_wiring.png)
+
+![chamber_image](https://user-images.githubusercontent.com/118491380/227365957-fa8b2439-1884-4f26-b954-e5c664bc3012.jpg)
+
