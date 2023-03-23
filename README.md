@@ -56,3 +56,15 @@ Using this configuration, we would start at Stage 1 with both levers being prese
 
 ## Running the experiment
 Using Terminal, move to where these files are stored using `cd`. Run `python3 working_send_and_recieve.py filename` replacing filename with whatever you want the resulting .csv and video files to be titled. Output should give times when nose is in food magazine, when levers are pressed, and whenever the stage changes. 
+
+# Operant Conditioning Chamber Wiring Diagram
+
+Levers: **Med Associates ENV-312-3 Retractable Mouse Lever**
+
+Food Dispenser: **Med Associates ENV-203 Pellet Dispenser**
+
+Relays: **[HiLetgo 5V One Channel Relay Module With optocoupler Support High or Low Level Trigger](https://www.amazon.com/HiLetgo-Channel-optocoupler-Support-Trigger/dp/B00LW15A4W)**
+
+IR Emitter and Receiver: **[Chanzon 5mm IR Infrared LED Diode Emitter + Receiver](https://www.amazon.com/Emitter-Receiver-VS1838B-Infrared-Raspberry/dp/B07TLBJR5J?th=1)**
+
+![alt text](operant_chamber_wiring.png)
