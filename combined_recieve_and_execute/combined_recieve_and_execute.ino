@@ -88,14 +88,14 @@ void setup() {
   //Serial.println(start_time);
   last_time = start_time;  
   Serial.println("entering loop");
-  Serial.println(RightLeverOut[0]);
-  Serial.println(RightLeverProb[0]);
-  Serial.println(LeftLeverOut[0]);
-  Serial.println(LeftLeverProb[0]);
+  //Serial.println(RightLeverOut[0]);
+  //Serial.println(RightLeverProb[0]);
+  //Serial.println(LeftLeverOut[0]);
+  //Serial.println(LeftLeverProb[0]);
   //Serial.println(PressToSwitch[0]);
   //Serial.println(TimeToSwitch[0]);
-  Serial.println(PressToAdvance[0]);
-  Serial.println(TimeToAdvance[0]);
+  //Serial.println(PressToAdvance[0]);
+  //Serial.println(TimeToAdvance[0]);
 }
 
 void loop() { 
@@ -117,9 +117,6 @@ void loop() {
   if (start_round == false) {
     return;
   }
-  //if (step > (prot_size - 1)) {
-  //  return;  
-  //} 
   else {
     if (session_press != -1) {
       if (RightLeverOut[step] == 1){
@@ -147,7 +144,7 @@ void loop() {
 
 void check_switch() {
   if (step == prot_size) {
-    Serial.println("complete end");    
+    Serial.println("complete end"); // Will probably Serial print this a few times at the end while we wait for python to give the kill signal
     return;
   }
   if (TimeToAdvance[step] == -1) {
@@ -158,7 +155,7 @@ void check_switch() {
     }
   }
   else {
-    if ((millis() - start_time) > TimeToAdvance[step]) {
+    if (((millis() - start_time) / (1000)) > TimeToAdvance[step]) { // Measure in seconds
       step += 1;
       num_presses = 0;
       Serial.println("next step");
@@ -217,7 +214,7 @@ void check_food() {
       digitalWrite(dispense_control, LOW);
       dispense_on = false;    
       food_delay = false;  
-      //Serial.println("finished dispensing");
+      Serial.println("rewarded");
     }
   }
 }
@@ -225,7 +222,6 @@ void check_food() {
 //Will not dispense if one lever is used 5 times or more, consecutively, useful during training when both levers are 100% rewarded
 //If this behavior is not desired, remove "&& consec_right < 5" from below, or change to a different number of consecutive presses
 void reward_calculation(){
-  //Serial.println("rewardtime");
   long r = random(100);
   if (session_press == 1) {
     if (r < RightLeverProb[step] && consec_right < 5) {
