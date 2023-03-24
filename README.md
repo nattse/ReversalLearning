@@ -1,7 +1,7 @@
 # Overview
 Behavioral tasks such as sign tracking and reversal learning are complex both in the information they provide and in the methodology/protocols they can require. As such, we wanted to gain better control over data collection (e.g. sampling frequency, video quality and framerate) while at the same time making the application of protocols more human-readable. In order to accomplish these tasks, we have created our own operant conditioning chambers. Protocol instructions and instrument readings are routed through an Arduino to a single laptop that time-syncs the data with high-resolution video capture. 
 
-The objective of this specific code repository is to test rodent reversal learning.
+This specific code repository is for a reversal learning task.
 
 ## First time setup
 These instructions assume you have downloaded this repository, the necessary packages, and the Arduino IDE. 
