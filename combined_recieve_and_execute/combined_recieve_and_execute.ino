@@ -15,7 +15,7 @@ int LeftLeverProb[25] = {};
 //int TimeToSwitch[25] = {};
 int PressToAdvance[25] = {};
 int TimeToAdvance[25] = {};
-
+unsigned long TimeSinceLastStep = 0; // When we change steps we reset the clock that we're comparing current time to
 int consec_left = 0;
 int consec_right = 0;
 
@@ -81,12 +81,13 @@ void setup() {
   digitalWrite(ir_source, HIGH);
   digitalWrite(detect_power, HIGH);
     
-  Serial.println("ready");
+  Serial.println("ready");  
   protocol_setup();
   
   start_time = millis();
   //Serial.println(start_time);
   last_time = start_time;  
+  TimeSinceLastStep = start_time;
   Serial.println("entering loop");
   //Serial.println(RightLeverOut[0]);
   //Serial.println(RightLeverProb[0]);
@@ -125,6 +126,7 @@ void loop() {
       if (LeftLeverOut[step] == 1) {
         retract_lever('l');
       }
+      Serial.println(num_presses); //edit this out if not interested in keeping track of presses
       reward_calculation();
       session_press = -1;
       start_round = false;
@@ -145,20 +147,29 @@ void loop() {
 void check_switch() {
   if (step == prot_size) {
     Serial.println("complete end"); // Will probably Serial print this a few times at the end while we wait for python to give the kill signal
+    retract_lever('r');
+    retract_lever('l');
     return;
   }
   if (TimeToAdvance[step] == -1) {
     if (num_presses > PressToAdvance[step]) {
       step += 1;
       num_presses = 0;
-      Serial.println("next step");
+      TimeSinceLastStep = millis();
+      Serial.print("next step ");
+      send_report();
     }
   }
   else {
-    if (((millis() - start_time) / (1000)) > TimeToAdvance[step]) { // Measure in seconds
+    if (((millis() - TimeSinceLastStep) / (1000)) > TimeToAdvance[step]) { // Measure in seconds
       step += 1;
       num_presses = 0;
-      Serial.println("next step");
+      retract_lever('r');
+      retract_lever('l');
+      start_round = false;
+      TimeSinceLastStep = millis();
+      Serial.print("next step ");
+      send_report();
     }
   }
 }
@@ -277,14 +288,14 @@ void read_lever(char side){
     sensorValue = analogRead(right_lever_report);
     float voltage = sensorValue * (5.0 / 1023.0);
     if ((voltage < 0.5) and (session_press != 1)) {
-      Serial.print("r_on");
+      Serial.print("r_on ");
       send_report();
       session_press = 1;
       consec_right += 1;
       consec_left = 0;
     }
     else if ((voltage > 0.5) and (session_press == 1)) {
-      Serial.print("r_off");
+      Serial.print("r_off ");
       send_report();
     }
   }
@@ -292,14 +303,14 @@ void read_lever(char side){
     sensorValue = analogRead(left_lever_report);
     float voltage = sensorValue * (5.0 / 1023.0);
     if ((voltage < 0.5) and (session_press != 2)) {
-      Serial.print("l_on");
+      Serial.print("l_on ");
       send_report();
       session_press = 2;
       consec_left += 1;
       consec_right = 0;
     }
     else if ((voltage > 0.5) and (session_press == 2)) {
-      Serial.print("l_off");
+      Serial.print("l_off ");
       send_report();    
     }
   }
