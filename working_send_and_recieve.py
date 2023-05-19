@@ -62,14 +62,21 @@ def arduino_setup():
     readouts.to_csv(sys.argv[1] + '.csv')
 
 x = threading.Thread(target=arduino_setup, args=()).start() #Runs the arduino protocol
-exp_settings = 'v4l2-ctl -d /dev/video{} --set-ctrl=exposure_absolute=300 --set-ctrl=exposure_auto=1'.format(camera_choice) #We turn off auto-exposure and peg the exposure time to 300
+
+# We turn off auto-exposure and peg the exposure time to 300
+# If using IR camera, use exposure time = 100
+exp_settings = 'v4l2-ctl -d /dev/video{} --set-ctrl=exposure_absolute=100 --set-ctrl=exposure_auto=1'.format(camera_choice) 
 camset = subprocess.Popen(exp_settings.split()) #This runs the exposure setting command in terminal
 r_t_s = False
 program_done = False
 #GStreamer code - waits for the Arduino and then immediately starts video capture outside of python (to cut down on the amount of processing we have to do on frames)
 while r_t_s == False:
     pass
-gstr_arg = 'gst-launch-1.0 v4l2src device=/dev/video{} num-buffers=-1 do-timestamp=true ! image/jpeg,width=3840,height=2160,framerate=30/1 ! queue ! avimux ! filesink location={}.avi -e'.format(camera_choice,sys.argv[1])
+# Full color camera
+#gstr_arg = 'gst-launch-1.0 v4l2src device=/dev/video{} num-buffers=-1 do-timestamp=true ! image/jpeg,width=3840,height=2160,framerate=30/1 ! queue ! avimux ! filesink location={}.avi -e'.format(camera_choice,sys.argv[1])
+
+# IR camera
+gstr_arg = 'gst-launch-1.0 v4l2src device=/dev/video{} num-buffers=-1 do-timestamp=true ! image/jpeg,width=1920,height=1080,framerate=30/1 ! queue ! avimux ! filesink location={}.avi -e'.format(camera_choice,sys.argv[1])
 print(gstr_arg)
 print('\n')
 gstr_cmd = gstr_arg.split()
