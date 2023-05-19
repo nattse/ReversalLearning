@@ -257,10 +257,12 @@ void reward_calculation(){
 void extend_lever(char side){
   if (side == 'r') {
     digitalWrite(right_lever_control, HIGH);
+    digitalWrite(right_led, HIGH);
     //Serial.print("extending right");
   }
   if (side == 'l') {
     digitalWrite(left_lever_control, HIGH);
+    digitalWrite(left_led, HIGH);
     //Serial.print("extending left");
   }
   //send_report();
@@ -272,9 +274,11 @@ void retract_lever(char side){
   //Serial.println("retractintime");
   if (side == 'r') {
     digitalWrite(right_lever_control, LOW);
+    digitalWrite(right_led, LOW);
   }
   if (side == 'l') {
     digitalWrite(left_lever_control, LOW);
+    digitalWrite(left_led, LOW);
   }
   //Serial.print("retracting");
   //send_report();
