@@ -151,7 +151,7 @@ void check_switch() {
     retract_lever('l');
     return;
   }
-  if (TimeToAdvance[step] == -1) {
+  if (PressToAdvance[step] != -1) {
     if (num_presses > PressToAdvance[step]) {
       step += 1;
       num_presses = 0;
@@ -160,7 +160,7 @@ void check_switch() {
       send_report();
     }
   }
-  else {
+  if (TimeSinceLastStep[step] != -1) {
     if (((millis() - TimeSinceLastStep) / (1000)) > TimeToAdvance[step]) { // Measure in seconds
       step += 1;
       num_presses = 0;
