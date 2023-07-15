@@ -160,7 +160,7 @@ void check_switch() {
       send_report();
     }
   }
-  if (TimeSinceLastStep[step] != -1) {
+  if (TimeToAdvance[step] != -1) {
     if (((millis() - TimeSinceLastStep) / (1000)) > TimeToAdvance[step]) { // Measure in seconds
       step += 1;
       num_presses = 0;
@@ -447,3 +447,4 @@ void fill_array(int someArray[]) {
     }
   }
 }  
+
