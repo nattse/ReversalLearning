@@ -164,7 +164,9 @@ void loop() {
       session_press = -1;
       start_round = false;
       last_time = millis();
-      num_presses += 1;
+      //num_presses += 1; // Put num_presses here if we are counting lever retractions (NOT rewards)
+      Serial.print("number presses counted:");
+      Serial.println(num_presses);
     }        
     else {
       if (RightLeverOut[step] == 1) {
@@ -293,6 +295,7 @@ void reward_calculation(){
     if (r < RightLeverProb[step] && consec_right < 5) {
       food_delay = true; // handle in func
       food_delay_timer = millis(); // handle in func
+      num_presses += 1;
     }  
     else {
       return;
@@ -302,6 +305,7 @@ void reward_calculation(){
     if (r < LeftLeverProb[step] && consec_left < 5) {
       food_delay = true;
       food_delay_timer = millis();
+      num_presses += 1;
     }
     else {
       return;
@@ -418,14 +422,14 @@ void read_lever(char side){
         if (cycles_required_left[step] == -1) {
           Serial.print("l_on ");
           send_report();
-          session_press = 1;
+          session_press = 2;
           consec_left += 1;
           consec_right = 0;
         }
         else if (completed_cycles_left == cycles_required_left[step]) {
           Serial.print("l_on ");
           send_report();
-          session_press = 1;
+          session_press = 2;
           consec_left += 1;
           consec_right = 0;
         }
