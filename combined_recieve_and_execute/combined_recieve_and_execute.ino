@@ -11,10 +11,21 @@ int RightLeverOut[25] = {};
 int RightLeverProb[25] = {};
 int LeftLeverOut[25] = {}; 
 int LeftLeverProb[25] = {};
-//int PressToSwitch[25] = {};
-//int TimeToSwitch[25] = {};
 int PressToAdvance[25] = {};
 int TimeToAdvance[25] = {};
+int cycles_required_right[25] = {}; // number of discreet lever presses required; either -1 or some number
+int cycles_required_left[25] = {};
+//test variables
+//int prot_size = 1;
+//int RightLeverOut[] = {1};
+//int RightLeverProb[] = {100};
+//int LeftLeverOut[] = {1}; 
+//int LeftLeverProb[] = {100};
+//int PressToAdvance[] = {100};
+//int TimeToAdvance[] = {3000};
+//int cycles_required_right[] = {2}; // number of discreet lever presses required; either -1 or some number
+//int cycles_required_left[] = {2};
+//end test variables
 unsigned long TimeSinceLastStep = 0; // When we change steps we reset the clock that we're comparing current time to
 int consec_left = 0;
 int consec_right = 0;
@@ -33,7 +44,7 @@ int no_single_ir_in = 0; //But if the IR sensor is good, i.e. doesn't throw rand
 
 bool lever_pressed = false;
 bool lever_out = false;
-int session_press = -1; //True when the lever was pressed at least once during a presentation period, signals food reward and then is reset to false for start of next presentation
+int session_press = -1;
 
 bool food_delay = false;
 unsigned long food_delay_timer;
@@ -52,7 +63,8 @@ int right_lever_control = 13;
 int right_lever_report = A4;
 int right_led = 3;
 int dispense_control = 11;
-
+int food_light = 4;
+unsigned long food_light_time;
 int control; 
 int sensorValue;
 
@@ -60,6 +72,16 @@ int sensorValue;
 int ir_source = 9;
 int detect_power = 8;
 int detect_signal = A3;
+
+// Multi press scheme
+int no_single_lever_right = 0;
+int no_single_lever_left = 0;
+int no_single_lever_off_right = 0;
+int no_single_lever_off_left = 0;
+int completed_cycles_right = 0;
+int completed_cycles_left = 0;
+bool lever_depressed_right = false;
+bool lever_depressed_left = false;
 
 void setup() {
   Serial.begin(9600);
@@ -74,6 +96,7 @@ void setup() {
   pinMode(right_led, OUTPUT);
 
   pinMode(dispense_control, OUTPUT);
+  pinMode(food_light, OUTPUT);
   //IR detector pins and stuff
   pinMode(ir_source, OUTPUT);
   pinMode(detect_power, OUTPUT);
@@ -99,6 +122,16 @@ void setup() {
   //Serial.println(TimeToAdvance[0]);
 }
 
+/*
+Measurements (IR beam, levers) and controls of devices are done via functions that have global on/off switches and counters,
+allowing us to loop through them while maintaining their states. In the main body, all timing is relative to last_time, which resets
+every full [nose in/lever press/reward calculation] loop. We loop through the top, not allowing start_round to be true until the cooldown period
+is over (representing time after food reward is given where mouse cannot trigger new round of lever presentation). All the while, measure_ir is trying
+to start the round. Once cooldown ends, an IR beam break results in entry to the bottom portion of the loop. Levers are extended and we wait for read_lever
+to change the session_press variable. Once session_press is changed, we retract all levers and calculate reward based on which lever was pressed (which is 
+represented by the session_press variable). last_time is then reset, session_press and some other lever-related variables wiped, and we start over again until
+conditions are met to proceed to the next step.
+*/
 void loop() { 
   unsigned long time = millis() - last_time;
   check_switch();
@@ -126,7 +159,7 @@ void loop() {
       if (LeftLeverOut[step] == 1) {
         retract_lever('l');
       }
-      Serial.println(num_presses); //edit this out if not interested in keeping track of presses
+      //Serial.println(num_presses); 
       reward_calculation();
       session_press = -1;
       start_round = false;
@@ -144,9 +177,13 @@ void loop() {
   }
 }
 
+/*
+Check two conditions (number of presses since start of step, time since step started) 
+to determine whether to move on to the next step
+*/
 void check_switch() {
   if (step == prot_size) {
-    Serial.println("complete end"); // Will probably Serial print this a few times at the end while we wait for python to give the kill signal
+    Serial.println("complete end"); 
     retract_lever('r');
     retract_lever('l');
     return;
@@ -174,6 +211,12 @@ void check_switch() {
   }
 }
 
+/*
+These irValue comparisons (<10 being beam broken, >15 being beam unbroken) are
+correct for new IR emitter/reciever pairs. Signals may begin to fluctuate around these 
+values if the emitter/reciever pairs get degraded (e.g. chewed). This can appear as erratic 
+nose in/out signals or as lagging in python recordings
+*/
 void measure_ir() {
   int irValue = analogRead(detect_signal);
   //Serial.println(irValue);
@@ -209,6 +252,10 @@ void measure_ir() {
   }
 }
 
+/*
+Dispenser requires a rising/falling edge so we time a quick HIGH/LOW switch outside the main loop
+An LED illuminatng the food bin upon reward also gets timed outside the loop
+*/
 void check_food() {
   //Serial.println("chec food");
   if (food_delay) {
@@ -217,8 +264,10 @@ void check_food() {
     }
     else if (dispense_on == false) {
       digitalWrite(dispense_control, HIGH);
+      digitalWrite(food_light, HIGH);
       dispense_on = true;
       dispense_time = millis();
+      food_light_time = millis();
       //Serial.println("dispensing...");     
     }    
     else if ((millis() - dispense_time) > 5){
@@ -228,10 +277,16 @@ void check_food() {
       Serial.println("rewarded");
     }
   }
+  if ((millis() - food_light_time) > 3000) {
+  digitalWrite(food_light, LOW);
+  food_light_time = 0;
+  }
 }
 
-//Will not dispense if one lever is used 5 times or more, consecutively, useful during training when both levers are 100% rewarded
-//If this behavior is not desired, remove "&& consec_right < 5" from below, or change to a different number of consecutive presses
+/*
+Will not dispense if one lever is used 5 times or more, consecutively, useful during training when both levers are 100% rewarded
+If this behavior is not desired, remove "&& consec_right < 5" from below, or change to a different number of consecutive presses
+*/
 void reward_calculation(){
   long r = random(100);
   if (session_press == 1) {
@@ -254,6 +309,9 @@ void reward_calculation(){
   }
 }
 
+/*
+Extend levers
+*/
 void extend_lever(char side){
   if (side == 'r') {
     digitalWrite(right_lever_control, HIGH);
@@ -270,6 +328,9 @@ void extend_lever(char side){
   //last_time = millis();
 }
 
+/*
+Pull levers in, reset lever-related variables
+*/
 void retract_lever(char side){
   //Serial.println("retractintime");
   if (side == 'r') {
@@ -283,44 +344,115 @@ void retract_lever(char side){
   //Serial.print("retracting");
   //send_report();
   lever_out = false;
+  no_single_lever_right = 0;
+  no_single_lever_off_right = 0;
+  no_single_lever_left = 0;
+  no_single_lever_off_left = 0;
+  completed_cycles_right = 0;
+  completed_cycles_left = 0;
+  lever_depressed_right = false;
+  lever_depressed_left = false;
   //last_time = millis();
 }
 
+/*
+The variable session_press is changed to signal to main loop that a lever has been pressed. It is then used in reward
+calculation to specify which lever was pressed and so what percentage chance of reward should be used.
+After completion, resetting of lever-related variables is done through the retract_lever function as it is cleaner to code it in there.
+I noticed that certain levers will occasionally come out and immediately provide two or three low voltage signals,
+which causes the lever presentation to finish prematurely. Not sure why this happens but some levers do it more 
+than others. To remedy this, we use the same no_single_(signal) scheme used in ir_control, where a signal ON
+(or additionally in this case, OFF) requires five repeated presentations before it is considered a true signal. 
+*/
 void read_lever(char side){
   //Serial.println("readlever");
   if (side == 'r') {
     sensorValue = analogRead(right_lever_report);
     float voltage = sensorValue * (5.0 / 1023.0);
-    if ((voltage < 0.5) and (session_press != 1)) {
-      Serial.print("r_on ");
-      send_report();
-      session_press = 1;
-      consec_right += 1;
-      consec_left = 0;
+    if ((voltage < 0.5) && (not lever_depressed_right)) {
+      if (no_single_lever_right > 5) {
+        lever_depressed_right = true;
+        Serial.print("r_pr ");
+        send_report();
+        if (cycles_required_right[step] == -1) {
+          Serial.print("r_on ");
+          send_report();
+          session_press = 1;
+          consec_right += 1;
+          consec_left = 0;
+        }
+        else if (completed_cycles_right == cycles_required_right[step]) {
+          Serial.print("r_on ");
+          send_report();
+          session_press = 1;
+          consec_right += 1;
+          consec_left = 0;
+        }
+      }
+      else {
+        no_single_lever_right += 1;
+        no_single_lever_off_right = 0;
+      }
     }
-    else if ((voltage > 0.5) and (session_press == 1)) {
-      Serial.print("r_off ");
-      send_report();
+    else if ((voltage > 0.5) && (lever_depressed_right)) {
+      if (no_single_lever_off_right > 5) {
+        completed_cycles_right += 1;
+        //Serial.print("r_off");
+        send_report();
+        lever_depressed_right = false; 
+      }
+      else if (voltage > 0.5) {
+      no_single_lever_right = 0;
+      no_single_lever_off_right += 1;
+      }
     }
   }
   else {
     sensorValue = analogRead(left_lever_report);
     float voltage = sensorValue * (5.0 / 1023.0);
-    if ((voltage < 0.5) and (session_press != 2)) {
-      Serial.print("l_on ");
-      send_report();
-      session_press = 2;
-      consec_left += 1;
-      consec_right = 0;
+    if ((voltage < 0.5) && (not lever_depressed_left)) {
+      if (no_single_lever_left > 5) {
+        lever_depressed_left = true;
+        Serial.print("l_pr ");
+        send_report();
+        if (cycles_required_left[step] == -1) {
+          Serial.print("l_on ");
+          send_report();
+          session_press = 1;
+          consec_left += 1;
+          consec_right = 0;
+        }
+        else if (completed_cycles_left == cycles_required_left[step]) {
+          Serial.print("l_on ");
+          send_report();
+          session_press = 1;
+          consec_left += 1;
+          consec_right = 0;
+        }
+      }
+      else {
+        no_single_lever_left += 1;
+        no_single_lever_off_left = 0;
+      }
     }
-    else if ((voltage > 0.5) and (session_press == 2)) {
-      Serial.print("l_off ");
-      send_report();    
+    else if ((voltage > 0.5) && (lever_depressed_left)) {
+      if (no_single_lever_off_left > 5) {
+        completed_cycles_left += 1;
+        //Serial.print("l_off");
+        send_report();
+        lever_depressed_left = false; 
+      }
+      else if (voltage > 0.5) {
+      no_single_lever_left = 0;
+      no_single_lever_off_left += 1;
+      }
     }
   }
 }
 
-//Gives time since start of experiment in Min:Sec:Millis
+/*
+Gives time since start of experiment in Min:Sec:Millis
+*/
 void send_report() {
   unsigned long initial_mils = millis() - start_time;
   int report_mils = initial_mils % 1000; //What remains after converting to seconds
@@ -332,34 +464,79 @@ void send_report() {
   Serial.println(buf);
 }
 
-/*
-The code below allows us to upload a protocol to the Arduino which will tell it
-how long to wait before presenting the lever and how long to present the lever for,
-for every single lever presentation. This protocol (time_plan in the .py file) is stored
-here in finalArray in the form 
-[wait, lever, wait, lever...ending_duration]
-
-We also upload another plan which tells the Arduino which lever to use, represented by binary
-entries in sideArray.
-
-Once finalArray is filled, the code sends the stored data back to the .py file to ensure 
-that no data was lost on the way over. 
-
-As to how finalArray works together with prot_size:
-finalArrary needs to be a gloabl variable, but we can't easily create an array on the fly
-due to how the Arduino code works. As a result, we have to create finalArray at the start
-and give it a ton of spaces that we will fill in, hence finalArray being of size 100 here.
-However, we'll very likely never fill finalArray perfectly, so there will be extra zeros
-trailing our last entry in finalArray. In order to step through finalArray without going past
-our last entry, we also upload to the Arduino the number of entries there are in total, which
-is stored in prot_size. 
+/* 
+Vomits up as many variables as possible to assist in debugging
 */
+void status_check() {
+  Serial.print("consec_left/right = ");
+  Serial.print(consec_left);
+  Serial.println(consec_right);
 
+  Serial.print("num_presses = ");
+  Serial.println(num_presses);
 
+  Serial.print("step = ");
+  Serial.println(step);
+
+  Serial.print("TimeSinceLastStep = ");
+  Serial.println(TimeSinceLastStep);
+
+  Serial.print("no_single_ir/no_single_ir_in = ");
+  Serial.print(no_single_ir);
+  Serial.println(no_single_ir_in);
+  
+  Serial.print("session_press = ");
+  Serial.println(session_press);
+  
+  if (food_delay) {
+    Serial.println("food_delay!");
+  }
+  else {
+    Serial.println("no food delay");
+  }
+
+  Serial.print("food_delay_timer = ");
+  Serial.println(food_delay_timer);
+
+  Serial.print("dispense_time = ");
+  Serial.println(dispense_time);
+
+  Serial.print("start_time/last_time = ");
+  Serial.print(start_time);
+  Serial.println(last_time);
+
+  Serial.print("left/right_lever_report = ");
+  Serial.print(left_lever_report);
+  Serial.println(right_lever_report);
+
+  if (start_round) {
+    Serial.println("start_round True!");    
+  }
+  else {
+    Serial.println("start_round False!");
+  }
+  if (lever_out) {
+    Serial.println("lever_out True");
+  }
+  else {
+    Serial.println("lever_out False");
+  }
+}
+
+/*
+The code below allows us to upload an n-step protocol to the Arduino by filling a number of arrays representing different
+variables (like which levers are presented, what each lever's reward probability is) with n elements. We first use get_size
+to determine how many steps/elements are going into each array, and then fill arrays. Serial communication between the computer
+and the Arduino can be tricky, so we continuously read back what we've recieved so that our main program can check it. 
+Getting the protocol size from get_size is essential since we can't create arrays of a specific size on the fly; if we want
+to read back the data in the arrays or check to see if we've gone through all the steps, we can't just iterate through all the
+elements in the arrays. So we need to know exactly how many relevent elements there are.
+
+Essentially don't change anything in get_size or fill_array because sending/recieving information with confidence is hard.
+*/
 
 void protocol_setup() {
   static bool done = false;
-
   while (prot_size == 0) {
     get_size();
   }
@@ -368,10 +545,10 @@ void protocol_setup() {
   fill_array(RightLeverProb);
   fill_array(LeftLeverOut);
   fill_array(LeftLeverProb);
-  //fill_array(PressToSwitch);
-  //fill_array(TimeToSwitch);
   fill_array(PressToAdvance);
   fill_array(TimeToAdvance);
+  fill_array(cycles_required_right);
+  fill_array(cycles_required_left);
 }
 
 void get_size() {
@@ -447,4 +624,3 @@ void fill_array(int someArray[]) {
     }
   }
 }  
-

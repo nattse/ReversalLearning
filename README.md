@@ -26,11 +26,15 @@ All experiment conditions are set beforehand in the *config.csv* file. Each colu
 
 **Left Lever Reward %** | 0-100 | Same as Right Lever Reward
 
+**Presses to trigger right lever** | any positive integer | How many times a lever needs to be pressed in order to "count"; levers will not retract and reward will not be calculated until this threshold number of presses is reached
+
+**Presses to trigger left lever** | any positive integer | Same as above
+
 **Switch stage at** | Unused row 
 
-**Number of presses** | any positive integer or -1 | Total number of lever presses needed to advance to the next stage. If using Duration instead, set to -1
+**Number of presses** | any positive integer or -1 | Total number of lever presses needed to advance to the next stage. (Set to -1 if you only want to consider **Duration**)
 
-**Duration** | any positive integer or -1 | Duration of time (seconds) after which we advance to the next stage. If using Number of Presses, set to -1
+**Duration** | any positive integer or -1 | Duration of time (seconds) needed to advance to the next stage. (Set to -1 if you only want to consider **Number of presses**)
 
 **Arduino ID Port** | any integer | Also can be found using `sudo dmesg | tail`. Only need to enter this in the first column
 
@@ -46,16 +50,32 @@ An example config.csv would be as follows:
 | Right Lever Reward % |100|50|
 | Left Lever Out |yes|yes|
 | Left Lever Reward % |100|75|
+| Presses to trigger right lever | 2 | 2 |
+| Presses to trigger left lever | 2 | 2 |
 | Switch stage at: |||
-| Number of presses |-1|30|
+| Number of presses |10|30|
 | Duration |600|-1|
 | Arduino ID Port |0||
 | Cam ID |2||
 
-Using this configuration, we would start at Stage 1 with both levers being presented and rewarded 100% of the time. This would last for 600 seconds, after which we switch to Stage 2. In this stage both levers are still presented, but the reward probability of the right lever drops to 50%, and the left lever drops to 75%. After 30 lever presses, all processes are stopped and the video recording ends. 
+Using this configuration, we would start at Stage 1 with both levers being presented - after two presses to either lever, reward would be dispensed 100% of the time. This would last for 600 seconds or 10 presses, whichever is reached first - after which we switch to Stage 2. In this stage both levers are still presented and both must be pressed twice to count, but the reward probability of the right lever drops to 50%, and the left lever drops to 75%. After 30 lever presses (regardless of how long it takes), all processes are stopped and the video recording ends. 
 
 ## Running the experiment
-Using Terminal, move to where these files are stored using `cd`. Run `python3 working_send_and_recieve.py filename` replacing filename with whatever you want the resulting .csv and video files to be titled. Output should give times when nose is in food magazine, when levers are pressed, and whenever the stage changes. 
+Using Terminal, move to where these files are stored using `cd`. Run `python3 working_send_and_recieve.py filename` replacing filename with whatever you want the resulting .csv and video files to be titled. 
+
+## Output 
+
+**nose_in/nose_out 00:00:000** > nose entry/exit to food bin
+
+**r_pr/l_pr 00:00:000** > right/left lever press that are sub-threshold and didn't trigger lever retraction/reward calculation
+
+**r_on/l_on 00:00:000** > right/left lever press that reached threshold and triggered lever retraction and reward calculation
+
+**rewarded** > denotes whether a reward was dispensed followng an r_on/l_on event
+
+**next step 00:00:000** > denotes the step has been incremented
+
+**complete end** > end of protocol
 
 # Operant Conditioning Chamber Wiring Diagram
 
