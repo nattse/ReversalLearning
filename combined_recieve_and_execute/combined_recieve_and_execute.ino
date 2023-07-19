@@ -398,7 +398,7 @@ void read_lever(char side){
       if (no_single_lever_off_right > 5) {
         completed_cycles_right += 1;
         //Serial.print("r_off");
-        send_report();
+        //send_report();
         lever_depressed_right = false; 
       }
       else if (voltage > 0.5) {
@@ -439,7 +439,7 @@ void read_lever(char side){
       if (no_single_lever_off_left > 5) {
         completed_cycles_left += 1;
         //Serial.print("l_off");
-        send_report();
+        //send_report();
         lever_depressed_left = false; 
       }
       else if (voltage > 0.5) {
