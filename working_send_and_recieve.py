@@ -26,7 +26,7 @@ left_out = [1 if i == 'yes' else 0 for i in left_out]
 left_prob = instructions.loc['Left Lever Reward %'].values
 left_prob = [int(i) for i in left_prob]
 advance_press = instructions.loc['Number of presses'].values
-advance_press = [int(i) for i in advance_press]
+advance_press = [int(i) - 1 for i in advance_press]
 advance_duration = instructions.loc['Duration'].values
 advance_duration = [int(i) for i in advance_duration]
 cycles_required_right = [int(i) - 1 for i in instructions.loc['Presses to trigger right lever'].values]
