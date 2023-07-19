@@ -65,17 +65,17 @@ Using Terminal, move to where these files are stored using `cd`. Run `python3 wo
 
 ## Output 
 
-nose_in/nose_out 00:00:000 > nose entry/exit to food bin
+**nose_in/nose_out 00:00:000** > nose entry/exit to food bin
 
-r_pr/l_pr 00:00:000 > right/left lever press that are sub-threshold and didn't trigger lever retraction/reward calculation
+**r_pr/l_pr 00:00:000** > right/left lever press that are sub-threshold and didn't trigger lever retraction/reward calculation
 
-r_on/l_on 00:00:000 > right/left lever press that reached threshold and triggered lever retraction and reward calculation
+**r_on/l_on 00:00:000** > right/left lever press that reached threshold and triggered lever retraction and reward calculation
 
-rewarded > denotes whether a reward was dispensed followng an r_on/l_on event
+**rewarded** > denotes whether a reward was dispensed followng an r_on/l_on event
 
-next step 00:00:000 > denotes the step has been incremented
+**next step 00:00:000** > denotes the step has been incremented
 
-complete end > end of protocol
+**complete end** > end of protocol
 
 # Operant Conditioning Chamber Wiring Diagram
 
