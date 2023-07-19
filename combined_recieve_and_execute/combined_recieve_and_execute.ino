@@ -372,17 +372,17 @@ void read_lever(char side){
     if ((voltage < 0.5) && (not lever_depressed_right)) {
       if (no_single_lever_right > 5) {
         lever_depressed_right = true;
-        Serial.print("r_pr");
+        Serial.print("r_pr ");
         send_report();
         if (cycles_required_right[step] == -1) {
-          Serial.print("r_on");
+          Serial.print("r_on ");
           send_report();
           session_press = 1;
           consec_right += 1;
           consec_left = 0;
         }
         else if (completed_cycles_right == cycles_required_right[step]) {
-          Serial.print("r_on");
+          Serial.print("r_on ");
           send_report();
           session_press = 1;
           consec_right += 1;
@@ -413,17 +413,17 @@ void read_lever(char side){
     if ((voltage < 0.5) && (not lever_depressed_left)) {
       if (no_single_lever_left > 5) {
         lever_depressed_left = true;
-        Serial.print("l_pr");
+        Serial.print("l_pr ");
         send_report();
         if (cycles_required_left[step] == -1) {
-          Serial.print("l_on");
+          Serial.print("l_on ");
           send_report();
           session_press = 1;
           consec_left += 1;
           consec_right = 0;
         }
         else if (completed_cycles_left == cycles_required_left[step]) {
-          Serial.print("l_on");
+          Serial.print("l_on ");
           send_report();
           session_press = 1;
           consec_left += 1;
