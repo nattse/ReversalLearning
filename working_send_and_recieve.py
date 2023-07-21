@@ -31,6 +31,7 @@ advance_duration = instructions.loc['Duration'].values
 advance_duration = [int(i) for i in advance_duration]
 cycles_required_right = [int(i) - 1 for i in instructions.loc['Presses to trigger right lever'].values]
 cycles_required_left = [int(i) - 1 for i in instructions.loc['Presses to trigger left lever'].values]
+max_presses = [int(i) - 1 for i in instructions.loc['Max rewarded consecutive presses'].values]
 sections = instructions.shape[1]
 plan_details = [sections,
                 right_out,
@@ -40,7 +41,8 @@ plan_details = [sections,
                 advance_press,
                 advance_duration,
                 cycles_required_right,
-                cycles_required_left]
+                cycles_required_left,
+                max_presses]
 for a in plan_details:
     print(a)
 ard_number = instructions.loc['Arduino ID Port'].iloc[0]
