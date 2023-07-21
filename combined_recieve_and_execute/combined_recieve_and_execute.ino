@@ -15,6 +15,7 @@ int PressToAdvance[25] = {};
 int TimeToAdvance[25] = {};
 int cycles_required_right[25] = {}; // number of discreet lever presses required; either -1 or some number
 int cycles_required_left[25] = {};
+int max_consec[25] = {};
 //test variables
 //int prot_size = 1;
 //int RightLeverOut[] = {1};
@@ -292,7 +293,7 @@ If this behavior is not desired, remove "&& consec_right < 5" from below, or cha
 void reward_calculation(){
   long r = random(100);
   if (session_press == 1) {
-    if (r < RightLeverProb[step] && consec_right < 5) {
+    if (r < RightLeverProb[step] && consec_right < max_consec[step]) {
       food_delay = true; // handle in func
       food_delay_timer = millis(); // handle in func
       num_presses += 1;
@@ -302,7 +303,7 @@ void reward_calculation(){
     }
   }
   else if (session_press == 2) {
-    if (r < LeftLeverProb[step] && consec_left < 5) {
+    if (r < LeftLeverProb[step] && consec_left < max_consec[step]) {
       food_delay = true;
       food_delay_timer = millis();
       num_presses += 1;
@@ -553,6 +554,7 @@ void protocol_setup() {
   fill_array(TimeToAdvance);
   fill_array(cycles_required_right);
   fill_array(cycles_required_left);
+  fill_array(max_consec);
 }
 
 void get_size() {
