@@ -30,6 +30,8 @@ All experiment conditions are set beforehand in the *config.csv* file. Each colu
 
 **Presses to trigger left lever** | any positive integer | Same as above
 
+**Max rewarded consecutive presses** | any positive integer | Number of consecutive presses after which reward for the over-pressed lever will be ceased until other lever is pressed
+
 **Switch stage at** | Unused row 
 
 **Number of presses** | any positive integer or -1 | Total number of lever presses needed to advance to the next stage. (Set to -1 if you only want to consider **Duration**)
