@@ -223,7 +223,7 @@ nose in/out signals or as lagging in python recordings
 void measure_ir() {
   int irValue = analogRead(detect_signal);
   //Serial.println(irValue);
-  if ((irValue < 10) and (ir_broken == false)) {
+  if ((irValue < 20) and (ir_broken == false)) {
     if (no_single_ir_in > 5){
       Serial.print("nose_in ");
       send_report();
@@ -236,10 +236,10 @@ void measure_ir() {
       no_single_ir_in += 1;
     }
   }
-  if (irValue < 10) {
+  if (irValue < 20) {
     no_single_ir = 0;
   }
-  if ((irValue > 15) and (ir_broken == true)) {
+  if ((irValue > 25) and (ir_broken == true)) {
     if (no_single_ir > 5) {
       Serial.print("nose_out ");
       send_report();
@@ -250,7 +250,7 @@ void measure_ir() {
       no_single_ir += 1;
     }
   }
-  if (irValue > 10) {
+  if (irValue > 25) {
     no_single_ir_in = 0;
   }
 }
