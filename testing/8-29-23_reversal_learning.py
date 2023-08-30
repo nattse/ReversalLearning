@@ -56,13 +56,13 @@ for a in plan_details:
 ard_number = instructions.loc['Arduino ID Port'].iloc[0]
 camera_choice = instructions.loc['Cam ID'].iloc[0]
 filename = os.path.join(instructions.loc['Filepath'][0], sys.argv[1])
+log = open(filename + '.txt', 'w')
+ser = serial.Serial(f'/dev/ttyACM{ard_number}', 9600, timeout=0.5)
 def arduino_setup():
     global r_t_s
     global program_done
-    log = open(filename + '.txt', 'w')
     log.write(sys.argv[1])
     log.write(f'Experiment began: {datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}\n')
-    ser = serial.Serial(f'/dev/ttyACM{ard_number}', 9600, timeout=0.5)
     #ser = serial.Serial(f'/dev/cu.usbmodem11201', 9600, timeout=0.5)
     utils.send_and_check(ser, plan_details)
     log.write(f'Experiment plan succesfully transfered to Arduino:\n{plan_details}\n')
@@ -77,31 +77,35 @@ def arduino_setup():
             if reports == "complete end":
                 program_done = True
                 break
-    ser.close()
-    log.close()
+ 
     
+try:
+    x = threading.Thread(target=arduino_setup, args=()).start() #Runs the arduino protocol
 
-x = threading.Thread(target=arduino_setup, args=()).start() #Runs the arduino protocol
+    # We turn off auto-exposure and peg the exposure time to 300
+    # If using IR camera, use exposure time = 100
+    exp_settings = f'v4l2-ctl -d /dev/video{camera_choice} --set-ctrl=exposure_time_absolute=100 --set-ctrl=auto_exposure=1'
+    camset = subprocess.Popen(exp_settings.split()) #This runs the exposure setting command in terminal
+    r_t_s = False
+    program_done = False
+    #GStreamer code - waits for the Arduino and then immediately starts video capture outside of python (to cut down on the amount of processing we have to do on frames)
+    while r_t_s == False:
+        pass
+    # Full color camera
+    #gstr_arg = 'gst-launch-1.0 v4l2src device=/dev/video{} num-buffers=-1 do-timestamp=true ! image/jpeg,width=3840,height=2160,framerate=30/1 ! queue ! avimux ! filesink location={}.avi -e'.format(camera_choice,sys.argv[1])
 
-# We turn off auto-exposure and peg the exposure time to 300
-# If using IR camera, use exposure time = 100
-exp_settings = f'v4l2-ctl -d /dev/video{camera_choice} --set-ctrl=exposure_time_absolute=100 --set-ctrl=auto_exposure=1'
-camset = subprocess.Popen(exp_settings.split()) #This runs the exposure setting command in terminal
-r_t_s = False
-program_done = False
-#GStreamer code - waits for the Arduino and then immediately starts video capture outside of python (to cut down on the amount of processing we have to do on frames)
-while r_t_s == False:
-    pass
-# Full color camera
-#gstr_arg = 'gst-launch-1.0 v4l2src device=/dev/video{} num-buffers=-1 do-timestamp=true ! image/jpeg,width=3840,height=2160,framerate=30/1 ! queue ! avimux ! filesink location={}.avi -e'.format(camera_choice,sys.argv[1])
-
-# IR camera
-gstr_arg = f'gst-launch-1.0 v4l2src device=/dev/video{camera_choice} num-buffers=-1 do-timestamp=true ! image/jpeg,width=1920,height=1080,framerate=30/1 ! queue ! avimux ! filesink location={filename + ".avi"} -e'
-print(gstr_arg)
-print('\n')
-gstr_cmd = gstr_arg.split()
-video_capture = subprocess.Popen(gstr_cmd)
-vid_id = video_capture.pid
-while program_done == False:
-    pass
-os.kill(vid_id,signal.SIGINT)
+    # IR camera
+    gstr_arg = f'gst-launch-1.0 v4l2src device=/dev/video{camera_choice} num-buffers=-1 do-timestamp=true ! image/jpeg,width=1920,height=1080,framerate=30/1 ! queue ! avimux ! filesink location={filename + ".avi"} -e'
+    print(gstr_arg)
+    print('\n')
+    gstr_cmd = gstr_arg.split()
+    video_capture = subprocess.Popen(gstr_cmd)
+    vid_id = video_capture.pid
+    while program_done == False:
+        pass
+    os.kill(vid_id,signal.SIGINT)
+    sys.exit('Ended via completion of Arduino protocol')
+except KeyboardInterrupt: 
+    log.close()
+    ser.close()
+    sys.exit('Ended via KeyboardInterrupt')
