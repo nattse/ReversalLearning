@@ -55,7 +55,6 @@ for a in plan_details:
     print(a)
 ard_number = instructions.loc['Arduino ID Port'].iloc[0]
 camera_choice = instructions.loc['Cam ID'].iloc[0]
-
 filename = os.path.join(instructions.loc['Filepath'][0], sys.argv[1])
 def arduino_setup():
     global r_t_s
@@ -86,7 +85,7 @@ x = threading.Thread(target=arduino_setup, args=()).start() #Runs the arduino pr
 
 # We turn off auto-exposure and peg the exposure time to 300
 # If using IR camera, use exposure time = 100
-exp_settings = f'v4l2-ctl -d /dev/video{camera_choice} --set-ctrl=exposure_absolute=100 --set-ctrl=exposure_auto=1'
+exp_settings = f'v4l2-ctl -d /dev/video{camera_choice} --set-ctrl=exposure_time_absolute=100 --set-ctrl=auto_exposure=1'
 camset = subprocess.Popen(exp_settings.split()) #This runs the exposure setting command in terminal
 r_t_s = False
 program_done = False
