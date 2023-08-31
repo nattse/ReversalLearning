@@ -3,18 +3,18 @@ bool array_made = false;
 bool sides_planned = false;
 const byte numChars = 64;
 char size_temp[numChars] = {};
-int prot_size = 1; //Number of steps in the recieved time_plan
-int RightLeverOut[25] = {1}; // If either LeverOut is -2, lever scramble activated
-int RightLeverProb[25] = {100};
-int LeftLeverOut[25] = {-2}; 
-int LeftLeverProb[25] = {100};
-int PressToAdvance[25] = {1};
-int TimeToAdvance[25] = {10};
-int cycles_required_right[25] = {1}; // number of discreet lever presses required; either -1 or some number
-int cycles_required_left[25] = {1};
-int max_consec[25] = {100};
-int lever_timeout[25] = {-1}; // How long the levers will stay presented; use -1 for no timeout
-int ir_timeout[25] = {3}; // How long the ir beam can be broken after lever retraction without triggering a new lever presentation
+int prot_size = 0; //Number of steps in the recieved time_plan
+int RightLeverOut[25] = {}; //{1, -2}; // If either LeverOut is -2, lever scramble activated
+int RightLeverProb[25] = {}; //{100, 100};
+int LeftLeverOut[25] = {}; //{-2, -2}; 
+int LeftLeverProb[25] = {}; //{100, 0};
+int PressToAdvance[25] = {}; //{1, 1};
+int TimeToAdvance[25] = {}; //{1000, 1000};
+int cycles_required_right[25] = {}; //{1, 1}; // number of discreet lever presses required; either -1 or some number
+int cycles_required_left[25] = {}; //{1, 1};
+int max_consec[25] = {}; //{100, 100};
+int lever_timeout[25] = {}; //{6000, 6000}; // How long the levers will stay presented; use -1 for no timeout
+int ir_timeout[25] = {}; //{3000, 3000}; // How long the ir beam can be broken after lever retraction without triggering a new lever presentation
 //test variables
 //int prot_size = 1;
 //int RightLeverOut[] = {1};
@@ -30,7 +30,8 @@ unsigned long TimeSinceLastStep = 0; // When we change steps we reset the clock 
 int consec_left = 0;
 int consec_right = 0;
 
-int num_presses = 0;
+int num_presses = 0; // A functional value, presses in a step
+int cum_presses = 0; // A display value, all presses across entire experiment
 int step = 0;
 /*
 Actual proccess variables
@@ -54,7 +55,6 @@ unsigned long dispense_time;
 
 unsigned long start_time;
 unsigned long last_time;
-bool skip_to_start = false;
 bool final_finish = false;
 
 //Lever and dispenser pins and stuff
@@ -110,7 +110,7 @@ void setup() {
   digitalWrite(detect_power, HIGH);
     
   Serial.println("ready");  
-  //protocol_setup();
+  protocol_setup();
   start_time = millis();
   last_time = start_time;  
   TimeSinceLastStep = start_time;
@@ -119,14 +119,13 @@ void setup() {
 
 void loop() {
   // Reset
-  skip_to_start = false;
   char rewarded_lever;
   int flicker_led = 0;
   scrambled_state = false;
   
 
   // Wait for post-round IR timeout to end
-  Serial.println("at the beginning");
+  //Serial.println("at the beginning");
   while (((millis() - last_time) / 1000) < ir_timeout[step]) {
     check_food();
     check_switch();
@@ -147,10 +146,9 @@ void loop() {
     }
 
   // IR timeout ends, begin round, scanning until next time beam breaks
-  Serial.println("waiting for nose in");
+  //Serial.println("waiting for nose in");
   digitalWrite(food_light, LOW);
   while (true) {
-    if (skip_to_start) {return;}
     check_switch();
     char signal = measure_ir();
     if (signal == 'i') {
@@ -185,10 +183,9 @@ void loop() {
   }
 
   // Monitor levers up until a time limit. Activated lever has to be checked for too many repeats and is then passed on for reward calculation
-  Serial.println("waiting for lever press");
+  //Serial.println("waiting for lever press");
   unsigned long time = millis();
   while (true){
-    if (skip_to_start) {return;}
     check_switch();
     char signal = measure_ir();
     flicker(flicker_led);
@@ -229,7 +226,8 @@ void loop() {
   retract_lever('r');
   retract_lever('l');
   Serial.print("number presses counted:");
-  Serial.println(num_presses);
+  
+  Serial.println(cum_presses);
 }
 
 /*
@@ -237,14 +235,13 @@ Check two conditions (number of presses since start of step, time since step sta
 to determine whether to move on to the next step
 */
 void check_switch() {
-  if (skip_to_start) {return;}
+  if (final_finish) {return;}
   if (PressToAdvance[step] != -1) {
     if (num_presses > PressToAdvance[step]) {
       step += 1;
-      skip_to_start = true;
-      retract_lever('r');
-      retract_lever('l');
         if (step == prot_size) {
+          retract_lever('r');
+          retract_lever('l');
           final_finish = true;
           return;
         }
@@ -259,10 +256,9 @@ void check_switch() {
   if (TimeToAdvance[step] != -1) {
     if (((millis() - TimeSinceLastStep) / (1000)) > TimeToAdvance[step]) { // Measure in seconds
       step += 1;
-      skip_to_start = true;
-      retract_lever('r');
-      retract_lever('l');
         if (step == prot_size) {
+          retract_lever('r');
+          retract_lever('l');
           final_finish = true;
           return;
         }
@@ -286,7 +282,7 @@ nose in/out signals or as lagging in python recordings
 char measure_ir() {
   int irValue = analogRead(detect_signal);
   //Serial.println(irValue);
-  if ((irValue < 20) and (ir_broken == false)) {
+  if ((irValue < 300) and (ir_broken == false)) {
     if (no_single_ir_in > 5){
       Serial.print("nose_in ");
       send_report();
@@ -300,10 +296,10 @@ char measure_ir() {
       no_single_ir_in += 1;
     }
   }
-  if (irValue < 20) {
+  if (irValue < 300) {
     no_single_ir = 0;
   }
-  if ((irValue > 25) and (ir_broken == true)) {
+  if ((irValue > 700) and (ir_broken == true)) {
     if (no_single_ir > 5) {
       Serial.print("nose_out ");
       send_report();
@@ -315,7 +311,7 @@ char measure_ir() {
       no_single_ir += 1;
     }
   }
-  if (irValue > 25) {
+  if (irValue > 700) {
     no_single_ir_in = 0;
   }
 }
@@ -381,18 +377,22 @@ void reward_calculation(char lever){
     Serial.println(low_prob);
     long r = random(100);
     if (lever == high_lever) {
+      Serial.println("high lever chosen");
       if (r < high_prob) {
         food_signal = true;
         food_delay_timer = millis();
         num_presses += 1;
+        cum_presses += num_presses;
         Serial.println("high lever rewarded");
       }
     }
     else {
+      Serial.println("low lever chosen");
       if (r < low_prob) {
         food_signal = true;
         food_delay_timer = millis();
         num_presses += 1;
+        cum_presses += num_presses;
         Serial.println("low lever rewarded");
       }
     }
@@ -410,6 +410,7 @@ void reward_calculation(char lever){
     food_signal = true;
     food_delay_timer = millis();
     num_presses += 1;
+    cum_presses += num_presses;
     Serial.println("rewarded");
   }
 }
