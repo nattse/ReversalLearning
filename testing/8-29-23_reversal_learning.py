@@ -57,6 +57,7 @@ ard_number = instructions.loc['Arduino ID Port'].iloc[0]
 camera_choice = instructions.loc['Cam ID'].iloc[0]
 filename = os.path.join(instructions.loc['Filepath'][0], sys.argv[1])
 log = open(filename + '.txt', 'w')
+serial_flag = threading.Event()
 ser = serial.Serial(f'/dev/ttyACM{ard_number}', 9600, timeout=0.5)
 def arduino_setup():
     global r_t_s
@@ -68,6 +69,9 @@ def arduino_setup():
     log.write(f'Experiment plan succesfully transfered to Arduino:\n{plan_details}\n')
     readouts = []
     while True:
+        if serial_flag.is_set():
+            print('serial flag recieved')
+            break
         reports = ser.readline().decode().strip()
         if len(reports) > 1:
             if reports == 'entering loop':
@@ -77,11 +81,13 @@ def arduino_setup():
             if reports == "complete end":
                 program_done = True
                 break
+    ser.close()
  
-    
-try:
-    x = threading.Thread(target=arduino_setup, args=()).start() #Runs the arduino protocol
+x = threading.Thread(target=arduino_setup, args=())
+x.start() #Runs the arduino protocol
 
+try:
+    
     # We turn off auto-exposure and peg the exposure time to 300
     # If using IR camera, use exposure time = 100
     exp_settings = f'v4l2-ctl -d /dev/video{camera_choice} --set-ctrl=exposure_time_absolute=100 --set-ctrl=auto_exposure=1'
@@ -107,5 +113,9 @@ try:
     sys.exit('Ended via completion of Arduino protocol')
 except KeyboardInterrupt: 
     log.close()
+    serial_flag.set()
+    x.join()
+    ser = serial.Serial(f'/dev/ttyACM{ard_number}', 9600, timeout=0.5)
     ser.close()
+    time.sleep(2)
     sys.exit('Ended via KeyboardInterrupt')
