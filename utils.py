@@ -88,7 +88,7 @@ def check_config_advanced(config):
     var_names = [i for i in config.index[static+1:] if 'ID' not in i]
     for var in var_names:
         row_types = pd.isnull(config.loc[var])
-        if not row_types[0] and all(row_types[1:]):                            # First column is a valid number, all others are blank                   
+        if not row_types.iloc[0] and all(row_types.iloc[1:]):                            # First column is a valid number, all others are blank                   
             return_dict[var] = cols * [int(config.loc[var].values[0])]
         elif all(row_types):
             raise Exception(f'All values missing in config row: {var}\nNothing has been run yet, please fix and try again')
