@@ -67,6 +67,8 @@ Using Terminal, move to where these files are stored using `cd`. Run `python3 wo
 
 ## Output 
 
+Read .txt file using `df = pd.read_csv(file, sep = '\t', skiprows=3, header = None)` where file is the filename.
+
 **nose_in/nose_out 00:00:000** > nose entry/exit to food bin
 
 **r_pr/l_pr 00:00:000** > right/left lever press that are sub-threshold and didn't trigger lever retraction/reward calculation
