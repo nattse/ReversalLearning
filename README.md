@@ -7,32 +7,38 @@ This specific code repository is for a reversal learning task.
 These instructions assume you have downloaded this repository, the necessary packages, and the Arduino IDE. 
 Connect the Arduino and use the IDE to upload *combined_recieve_and_execute.ino* to the Arduino. At this point also note the port the Arduino is on (e.g. COM**2**), as you will need to manually enter this into your config file. Plug in the USB camera next and use `v4l2-ctl --list-devices` to get the device number (e.g. /dev/video**2**).
 
+The only thing in the code that needs to be changed is in `measure_ir()` in combined_recieve_and_execute.ino
+The irValue is compared to two different numbers at these four lines: 
+
+`if ((irValue < 300) and (ir_broken == false)) {`
+
+`if (irValue < 300) {`
+
+`if ((irValue > 700) and (ir_broken == true)) {`
+
+`if (irValue > 700) {`
+
+If irValue is below the low number, the beam is considered broken. If it higher than the large number, the beam is considered not broken.
+The baseline irValue is different for every setup, and the appropriate threshold values vary as well. Use send_recieve_dummy.ino to get a readout of your setup's irValue. Stick your finger in the food bin and see what the values drop to, and set this as the lower threshold (replace `300` in `if ((irValue < 300) and (ir_broken == false)) {` and `if (irValue < 300) {` with your new number). While your finger is in there, notice how much the values can fluctuate. You want to set your higher threshold to be significantly greater than the largest fluctuation. So if baseline readings are at 100, then when you stick your finger in, the irValue bounces between 0 and 11, replace `700` in the above code with 30. 
+
 ## Before each run
 All experiment conditions are set beforehand in the *config.csv* file. Each column represents the conditions for that stage of the experiment, and an experiment can contain as many stages as desired, each with their own unique conditions. Once video recording has begun, the procedure in any stage is as follows:
 - Nose poke into the food receptacle begins the trial
 - Levers are presented
 - Upon lever press, all levers are retracted
-- Food pellet is dispensed depending on the pressed lever's probability of reward (or if that same lever has been pressed 5 or more times in a row; see function reward_calculation() in combined_recieve_and_execute.ino to turn off)
+- Food pellet is dispensed depending on the pressed lever's probability of reward and whether the limit on consecutive lever presses has been hit
 - New trial initiation is blocked for three seconds after reward is dispensed (*need to consider that a mouse may be slow to retrieve the food at first and so may trigger a new trial upon retrieval - something we'll need to work out through trial and error*)
 - Check to see if ready to move to next stage, and if so, change conditions (e.g. levers presented/reward probability) according to the next stage. Otherwise, wait for nose poke to begin another trial
 
-### Using config.csv
+## Using config.csv
 
-**Right Lever Out** | yes/no | Determines whether the right lever is presented 
+**Right/Left Lever Out** | yes/no/random | Determines whether the right or left lever is presented. See random for random
 
-**Right Lever Reward %** | 0-100 | Determines the probability of a food reward being dispensed
+**Right/Left Lever Reward %** | 0-100 | Determines the probability of a food reward being dispensed for that lever. See random for how reward payouts are handled during random rounds
 
-**Left Lever Out** | yes/no | Same as Right Lever Out
-
-**Left Lever Reward %** | 0-100 | Same as Right Lever Reward
-
-**Presses to trigger right lever** | any positive integer | How many times a lever needs to be pressed in order to "count"; levers will not retract and reward will not be calculated until this threshold number of presses is reached
-
-**Presses to trigger left lever** | any positive integer | Same as above
+**Presses to trigger right/left lever** | any positive integer | How many times a lever needs to be pressed in order to "count"; levers will not retract and reward will not be calculated until this threshold number of presses is reached
 
 **Max rewarded consecutive presses** | any positive integer | Number of consecutive presses after which reward for the over-pressed lever will be ceased until other lever is pressed
-
-**Switch stage at** | Unused row 
 
 **Number of presses** | any positive integer or -1 | Total number of lever presses needed to advance to the next stage. (Set to -1 if you only want to consider **Duration**)
 
@@ -42,6 +48,9 @@ All experiment conditions are set beforehand in the *config.csv* file. Each colu
 
 **Cam ID** | any integer | `v4l2-ctl --list-devices`. Only need to enter this in the first column
 
+**Lever Timeout** | any integer; default = -1 | How many seconds the lever will stay out once presented. Once this time is up, levers will retract and no reward will be dispensed. Set to -1 to not use this feature
+
+**IR Timeout** | any integer; default = 3 | After reward is calculated, breaking the IR beam in the food bin will not trigger the levers for this number of seconds
 ____________________________________________________________________________________________________________________________
 
 An example config.csv would be as follows:
