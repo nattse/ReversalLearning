@@ -16,6 +16,12 @@ import warnings
 import utils
 import re
 import matplotlib.pyplot as plt
+
+if len(sys.argv) < 2:
+    raise NameError('Looks like you forgot to add a file name in the terminal command')
+if len(sys.argv) > 2:
+    raise NameError('Looks like you put too many arguments in the terminal command')
+
 instructions = pd.read_excel('config.xlsx', index_col = 0)
 utils.check_config_vars(instructions)
 
@@ -53,7 +59,7 @@ for a in plan_details:
     print(a)
 ard_number = instructions.loc['Arduino ID Port'].iloc[0]
 camera_choice = instructions.loc['Cam ID'].iloc[0]
-filename = os.path.join(instructions.loc['Filepath'][0], sys.argv[1])
+filename = os.path.join(instructions.loc['Filepath'].iloc[0], sys.argv[1])
 log = open(filename + '.txt', 'w')
 serial_flag = threading.Event()
 ser = serial.Serial(f'/dev/ttyACM{ard_number}', 9600, timeout=0.5)
@@ -80,6 +86,7 @@ def arduino_setup():
                 program_done = True
                 break
     ser.close()
+    print('successfully closed')
  
 x = threading.Thread(target=arduino_setup, args=())
 x.start() #Runs the arduino protocol
@@ -110,10 +117,10 @@ try:
     os.kill(vid_id,signal.SIGINT)
     sys.exit('Ended via completion of Arduino protocol')
 except KeyboardInterrupt: 
-    log.close()
     serial_flag.set()
     x.join()
     ser = serial.Serial(f'/dev/ttyACM{ard_number}', 9600, timeout=0.5)
     ser.close()
+    log.close()
     time.sleep(2)
     sys.exit('Ended via KeyboardInterrupt')
