@@ -30,8 +30,8 @@ unsigned long TimeSinceLastStep = 0; // When we change steps we reset the clock 
 int consec_left = 0;
 int consec_right = 0;
 
-int num_presses = 0; // A functional value, presses in a step
-int cum_presses = 0; // A display value, all presses across entire experiment
+int num_presses = 0; // A functional value, presses in a step. Gets reset every step change
+int cum_presses = 0; // A display value, all presses across entire experiment. Doesn't get reset
 int step = 0;
 /*
 Actual proccess variables
@@ -123,27 +123,12 @@ void loop() {
   int flicker_led = 0;
   scrambled_state = false;
   
-
   // Wait for post-round IR timeout to end
   //Serial.println("at the beginning");
   while (((millis() - last_time) / 1000) < ir_timeout[step]) {
     check_food();
-    check_switch();
     measure_ir();
   }
-
-  // Pre-round check for final experiment end conditions
-  if (final_finish) {
-    while (((millis() - last_time) / 1000) < ir_timeout[step - 1]) {
-      measure_ir(); // Without inserting a temporary timeout, everything shuts off right after check_switch returns which may mess with the dispenser
-    }
-    digitalWrite(food_light, LOW);
-    digitalWrite(dispense_control, LOW);
-    Serial.println("complete end");
-    while (true) {
-      bool i = true;
-      }
-    }
 
   // IR timeout ends, begin round, scanning until next time beam breaks
   //Serial.println("waiting for nose in");
@@ -235,7 +220,14 @@ Check two conditions (number of presses since start of step, time since step sta
 to determine whether to move on to the next step
 */
 void check_switch() {
-  if (final_finish) {return;}
+  if (final_finish) {
+    digitalWrite(food_light, LOW);
+    digitalWrite(dispense_control, LOW);
+    Serial.println("complete end");
+    while (true) {
+      bool i = true;
+    }
+  }
   if (PressToAdvance[step] != -1) {
     if (num_presses > PressToAdvance[step]) {
       step += 1;
@@ -382,7 +374,7 @@ void reward_calculation(char lever){
         food_signal = true;
         food_delay_timer = millis();
         num_presses += 1;
-        cum_presses += num_presses;
+        cum_presses += 1;
         Serial.println("high lever rewarded");
       }
     }
@@ -392,7 +384,7 @@ void reward_calculation(char lever){
         food_signal = true;
         food_delay_timer = millis();
         num_presses += 1;
-        cum_presses += num_presses;
+        cum_presses += 1;
         Serial.println("low lever rewarded");
       }
     }
@@ -410,7 +402,7 @@ void reward_calculation(char lever){
     food_signal = true;
     food_delay_timer = millis();
     num_presses += 1;
-    cum_presses += num_presses;
+    cum_presses += 1;
     Serial.println("rewarded");
   }
 }
