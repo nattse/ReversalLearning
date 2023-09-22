@@ -5,7 +5,6 @@ This specific code repository is for a reversal learning task.
 
 ## First time setup
 These instructions assume you have downloaded this repository, the necessary packages, and the Arduino IDE. 
-Connect the Arduino and use the IDE to upload *combined_recieve_and_execute.ino* to the Arduino. At this point also note the port the Arduino is on (e.g. COM**2**), as you will need to manually enter this into your config file. Plug in the USB camera next and use `v4l2-ctl --list-devices` to get the device number (e.g. /dev/video**2**).
 
 The only thing in the code that needs to be changed is in `measure_ir()` in combined_recieve_and_execute.ino
 The irValue is compared to two different numbers at these four lines: 
@@ -21,16 +20,29 @@ The irValue is compared to two different numbers at these four lines:
 If irValue is below the low number, the beam is considered broken. If it higher than the large number, the beam is considered not broken.
 The baseline irValue is different for every setup, and the appropriate threshold values vary as well. Use send_recieve_dummy.ino to get a readout of your setup's irValue. Stick your finger in the food bin and see what the values drop to, and set this as the lower threshold (replace `300` in `if ((irValue < 300) and (ir_broken == false)) {` and `if (irValue < 300) {` with your new number). While your finger is in there, notice how much the values can fluctuate. You want to set your higher threshold to be significantly greater than the largest fluctuation. So if baseline readings are at 100, then when you stick your finger in, the irValue bounces between 0 and 11, replace `700` in the above code with 30. 
 
-## Before each run
-All experiment conditions are set beforehand in the *config.csv* file. Each column represents the conditions for that stage of the experiment, and an experiment can contain as many stages as desired, each with their own unique conditions. Once video recording has begun, the procedure in any stage is as follows:
+## Basic procedure employed
+
+Once video recording has begun, the procedure is as follows:
 - Nose poke into the food receptacle begins the trial
 - Levers are presented
 - Upon lever press, all levers are retracted
 - Food pellet is dispensed depending on the pressed lever's probability of reward and whether the limit on consecutive lever presses has been hit
-- New trial initiation is blocked for three seconds after reward is dispensed (*need to consider that a mouse may be slow to retrieve the food at first and so may trigger a new trial upon retrieval - something we'll need to work out through trial and error*)
-- Check to see if ready to move to next stage, and if so, change conditions (e.g. levers presented/reward probability) according to the next stage. Otherwise, wait for nose poke to begin another trial
+- New trial initiation is blocked for three seconds after reward is dispensed
+- Check to see if ending conditions have been met; if not, wait for nose poke to begin another trial
 
-## Using config.csv
+## Before each run
+
+### Checking Camera ID and Arduino ID
+Connect the Arduino and use the IDE to upload *combined_recieve_and_execute.ino* to the Arduino. At this point also note the port the Arduino is on (e.g. COM**2**), and check that this matches the Arduino designated in the config file. Plug in the USB camera next and use `v4l2-ctl --list-devices` to get the device number (e.g. /dev/video**2**).
+
+## Running the experiment
+Using Terminal, move to where *working_send_and_recieve.py* is located stored using `cd`. Run `python3 working_send_and_recieve.py config_file filename` replacing config_file with either *training_1, training_2, reversal, random*, depending on the protocol you want to use. Replace filename with whatever you want the resulting .txt and video files to be titled. 
+
+Config files that correspond to the different protocols are stored in the ./configs directory. By default, the *training_1, training_2, reversal, random* configs should not be altered except to enter a new Arduino ID or Camera ID if they change.
+
+Custom config files can be created to alter specific settings, and settings can be made to automatically change throughout a single experiment by adding on additional stages. These additional stages can be entered into the custom config file by adding new columns of settings to the right of the original settings.
+
+### Config settings 
 
 **Right/Left Lever Out** | yes/no/random | Determines whether the right or left lever is presented. See random for random
 
@@ -52,27 +64,6 @@ All experiment conditions are set beforehand in the *config.csv* file. Each colu
 
 **IR Timeout** | any integer; default = 3 | After reward is calculated, breaking the IR beam in the food bin will not trigger the levers for this number of seconds
 ____________________________________________________________________________________________________________________________
-
-An example config.csv would be as follows:
-
-|  | Stage 1 | Stage 2 |
-| :---         |     :---:      |          ---: |
-| Right Lever Out  |yes|yes|
-| Right Lever Reward % |100|50|
-| Left Lever Out |yes|yes|
-| Left Lever Reward % |100|75|
-| Presses to trigger right lever | 2 | 2 |
-| Presses to trigger left lever | 2 | 2 |
-| Switch stage at: |||
-| Number of presses |10|30|
-| Duration |600|-1|
-| Arduino ID Port |0||
-| Cam ID |2||
-
-Using this configuration, we would start at Stage 1 with both levers being presented - after two presses to either lever, reward would be dispensed 100% of the time. This would last for 600 seconds or 10 presses, whichever is reached first - after which we switch to Stage 2. In this stage both levers are still presented and both must be pressed twice to count, but the reward probability of the right lever drops to 50%, and the left lever drops to 75%. After 30 lever presses (regardless of how long it takes), all processes are stopped and the video recording ends. 
-
-## Running the experiment
-Using Terminal, move to where these files are stored using `cd`. Run `python3 working_send_and_recieve.py filename` replacing filename with whatever you want the resulting .csv and video files to be titled. 
 
 ## Output 
 
