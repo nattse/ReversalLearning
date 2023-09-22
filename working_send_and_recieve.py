@@ -17,12 +17,19 @@ import utils
 import re
 import matplotlib.pyplot as plt
 
-if len(sys.argv) < 2:
-    raise NameError('Looks like you forgot to add a file name in the terminal command')
-if len(sys.argv) > 2:
-    raise NameError('Looks like you put too many arguments in the terminal command')
+prompt = 'Invalid arguments\nCall this program with the following two (2) arguments:\
+         \n[name of config file in /configs folder, no file extension] [output file name]'
 
-instructions = pd.read_excel('config.xlsx', index_col = 0)
+if len(sys.argv) < 3:
+    print(prompt)
+    raise NameError(prompt)
+if len(sys.argv) > 3:
+    raise NameError(prompt)
+
+config_file = os.path.join('./configs', sys.argv[1]) + '.xlsx'
+print(f'Using this config_file: {config_file}')
+
+instructions = pd.read_excel(config_file, index_col = 0)
 utils.check_config_vars(instructions)
 
 steps = instructions.shape[1]
@@ -59,15 +66,16 @@ for a in plan_details:
     print(a)
 ard_number = instructions.loc['Arduino ID Port'].iloc[0]
 camera_choice = instructions.loc['Cam ID'].iloc[0]
-filename = os.path.join(instructions.loc['Filepath'].iloc[0], sys.argv[1])
+filename = os.path.join(instructions.loc['Filepath'].iloc[0], sys.argv[2])
 log = open(filename + '.txt', 'w')
 serial_flag = threading.Event()
 ser = serial.Serial(f'/dev/ttyACM{ard_number}', 9600, timeout=0.5)
 def arduino_setup():
     global r_t_s
     global program_done
-    log.write(sys.argv[1])
+    log.write(filename + '.txt')
     log.write(f'Experiment began: {datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}\n')
+    log.write(f'Using this config_file: {config_file}')
     #ser = serial.Serial(f'/dev/cu.usbmodem11201', 9600, timeout=0.5)
     utils.send_and_check(ser, plan_details)
     log.write(f'Experiment plan succesfully transfered to Arduino:\n{plan_details}\n')
