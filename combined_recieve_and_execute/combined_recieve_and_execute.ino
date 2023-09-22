@@ -1,21 +1,20 @@
-/* 
-Setup variables
-*/
 bool size_recieved = false;
 bool array_made = false;
 bool sides_planned = false;
 const byte numChars = 64;
 char size_temp[numChars] = {};
 int prot_size = 0; //Number of steps in the recieved time_plan
-int RightLeverOut[25] = {}; 
-int RightLeverProb[25] = {};
-int LeftLeverOut[25] = {}; 
-int LeftLeverProb[25] = {};
-int PressToAdvance[25] = {};
-int TimeToAdvance[25] = {};
-int cycles_required_right[25] = {}; // number of discreet lever presses required; either -1 or some number
-int cycles_required_left[25] = {};
-int max_consec[25] = {};
+int RightLeverOut[25] = {}; //{1, -2}; // If either LeverOut is -2, lever scramble activated
+int RightLeverProb[25] = {}; //{100, 100};
+int LeftLeverOut[25] = {}; //{-2, -2}; 
+int LeftLeverProb[25] = {}; //{100, 0};
+int PressToAdvance[25] = {}; //{1, 1};
+int TimeToAdvance[25] = {}; //{1000, 1000};
+int cycles_required_right[25] = {}; //{1, 1}; // number of discreet lever presses required; either -1 or some number
+int cycles_required_left[25] = {}; //{1, 1};
+int max_consec[25] = {}; //{100, 100};
+int lever_timeout[25] = {}; //{6000, 6000}; // How long the levers will stay presented; use -1 for no timeout
+int ir_timeout[25] = {}; //{3000, 3000}; // How long the ir beam can be broken after lever retraction without triggering a new lever presentation
 //test variables
 //int prot_size = 1;
 //int RightLeverOut[] = {1};
@@ -31,7 +30,8 @@ unsigned long TimeSinceLastStep = 0; // When we change steps we reset the clock 
 int consec_left = 0;
 int consec_right = 0;
 
-int num_presses = 0;
+int num_presses = 0; // A functional value, presses in a step. Gets reset every step change
+int cum_presses = 0; // A display value, all presses across entire experiment. Doesn't get reset
 int step = 0;
 /*
 Actual proccess variables
@@ -47,14 +47,15 @@ bool lever_pressed = false;
 bool lever_out = false;
 int session_press = -1;
 
-bool food_delay = false;
+bool food_signal = false;
 unsigned long food_delay_timer;
-unsigned long food_delay_thresh = 2000;
+unsigned long food_delay_thresh = 0; // How long we wait between turning dispenser signal line on and off, just a hardware specification hard-coded in
 bool dispense_on = false;
 unsigned long dispense_time;
 
 unsigned long start_time;
 unsigned long last_time;
+bool final_finish = false;
 
 //Lever and dispenser pins and stuff
 int left_lever_control = 12;
@@ -83,7 +84,10 @@ int completed_cycles_right = 0;
 int completed_cycles_left = 0;
 bool lever_depressed_right = false;
 bool lever_depressed_left = false;
-
+char high_lever;
+bool right_lever = false;
+bool left_lever = false;
+bool scrambled_state;
 void setup() {
   Serial.begin(9600);
 
@@ -107,77 +111,108 @@ void setup() {
     
   Serial.println("ready");  
   protocol_setup();
-  
   start_time = millis();
-  //Serial.println(start_time);
   last_time = start_time;  
   TimeSinceLastStep = start_time;
   Serial.println("entering loop");
-  //Serial.println(RightLeverOut[0]);
-  //Serial.println(RightLeverProb[0]);
-  //Serial.println(LeftLeverOut[0]);
-  //Serial.println(LeftLeverProb[0]);
-  //Serial.println(PressToSwitch[0]);
-  //Serial.println(TimeToSwitch[0]);
-  //Serial.println(PressToAdvance[0]);
-  //Serial.println(TimeToAdvance[0]);
 }
 
-/*
-Measurements (IR beam, levers) and controls of devices are done via functions that have global on/off switches and counters,
-allowing us to loop through them while maintaining their states. In the main body, all timing is relative to last_time, which resets
-every full [nose in/lever press/reward calculation] loop. We loop through the top, not allowing start_round to be true until the cooldown period
-is over (representing time after food reward is given where mouse cannot trigger new round of lever presentation). All the while, measure_ir is trying
-to start the round. Once cooldown ends, an IR beam break results in entry to the bottom portion of the loop. Levers are extended and we wait for read_lever
-to change the session_press variable. Once session_press is changed, we retract all levers and calculate reward based on which lever was pressed (which is 
-represented by the session_press variable). last_time is then reset, session_press and some other lever-related variables wiped, and we start over again until
-conditions are met to proceed to the next step.
-*/
-void loop() { 
-  unsigned long time = millis() - last_time;
-  check_switch();
-  measure_ir();
-  if (lever_out) {
-    if (RightLeverOut[step] == 1) {
-      read_lever('r');
-    }
-    if (LeftLeverOut[step] == 1) {
-      read_lever('l');      
+void loop() {
+  // Reset
+  char rewarded_lever;
+  int flicker_led = 0;
+  scrambled_state = false;
+  
+  // Wait for post-round IR timeout to end
+  //Serial.println("at the beginning");
+  while (((millis() - last_time) / 1000) < ir_timeout[step]) {
+    check_food();
+    measure_ir();
+  }
+
+  // IR timeout ends, begin round, scanning until next time beam breaks
+  //Serial.println("waiting for nose in");
+  digitalWrite(food_light, LOW);
+  while (true) {
+    check_switch();
+    char signal = measure_ir();
+    if (signal == 'i') {
+      break;
     }
   }
-  check_food();
-  if (time < 3000) { 
-    start_round = false;
-  }
-  if (start_round == false) {
-    return;
+
+  // Figure out which lever scheme to use
+  if (RightLeverOut[step] == -2 || LeftLeverOut[step] == -2) {
+    scrambled_state = true;
+    high_lever = scramble_levers();
+    extend_lever('r');
+    extend_lever('l');
+    if (high_lever == 'r') {
+      digitalWrite(left_led, HIGH);
+      flicker_led = right_led;
+    }
+    else {
+      digitalWrite(right_led, HIGH);
+      flicker_led = left_led;
+    }
   }
   else {
-    if (session_press != -1) {
-      if (RightLeverOut[step] == 1){
-        retract_lever('r');
+    if (RightLeverOut[step] == 1) {
+      extend_lever('r');
+      digitalWrite(right_led, HIGH);
+    }
+    if (LeftLeverOut[step] == 1) {
+      extend_lever('l');
+      digitalWrite(left_led, HIGH);
+    }
+  }
+
+  // Monitor levers up until a time limit. Activated lever has to be checked for too many repeats and is then passed on for reward calculation
+  //Serial.println("waiting for lever press");
+  unsigned long time = millis();
+  while (true){
+    check_switch();
+    char signal = measure_ir();
+    flicker(flicker_led);
+    if (RightLeverOut[step] != 0) {
+      right_lever = read_lever('r');
+      if (right_lever) {
+        rewarded_lever = 'r';
+        bool checked = check_repeat_presses('r');
+        if (checked) {
+          rewarded_lever = 'n';
+        }
+        break;
       }
-      if (LeftLeverOut[step] == 1) {
-        retract_lever('l');
+    }
+    if (LeftLeverOut[step] != 0) {
+      left_lever = read_lever('l');
+      if (left_lever) {
+        rewarded_lever = 'l';
+        bool checked = check_repeat_presses('l');
+        if (checked) {
+          rewarded_lever = 'n';
+        }
+        break;
       }
-      //Serial.println(num_presses); 
-      reward_calculation();
-      session_press = -1;
-      start_round = false;
-      last_time = millis();
-      //num_presses += 1; // Put num_presses here if we are counting lever retractions (NOT rewards)
-      Serial.print("number presses counted:");
-      Serial.println(num_presses);
-    }        
-    else {
-      if (RightLeverOut[step] == 1) {
-        extend_lever('r');
-      }
-      if (LeftLeverOut[step] == 1) {
-        extend_lever('l');
+    }
+    if (lever_timeout[step] != -1) {
+      if (((millis() - time) / 1000) > lever_timeout[step]) {
+      rewarded_lever = 'n';
+      Serial.println("timeout detected");
+      break;
       }
     }
   }
+
+  // Calculate reward according to which lever, what lever scheme, and whether it had too many repeats
+  reward_calculation(rewarded_lever);
+  last_time = millis();
+  retract_lever('r');
+  retract_lever('l');
+  Serial.print("number presses counted:");
+  
+  Serial.println(cum_presses);
 }
 
 /*
@@ -185,17 +220,27 @@ Check two conditions (number of presses since start of step, time since step sta
 to determine whether to move on to the next step
 */
 void check_switch() {
-  if (step == prot_size) {
-    Serial.println("complete end"); 
-    retract_lever('r');
-    retract_lever('l');
-    return;
+  if (final_finish) {
+    digitalWrite(food_light, LOW);
+    digitalWrite(dispense_control, LOW);
+    Serial.println("complete end");
+    while (true) {
+      bool i = true;
+    }
   }
   if (PressToAdvance[step] != -1) {
     if (num_presses > PressToAdvance[step]) {
       step += 1;
+        if (step == prot_size) {
+          retract_lever('r');
+          retract_lever('l');
+          final_finish = true;
+          return;
+        }
       num_presses = 0;
       TimeSinceLastStep = millis();
+      consec_right = 0;
+      consec_left = 0;
       Serial.print("next step ");
       send_report();
     }
@@ -203,9 +248,15 @@ void check_switch() {
   if (TimeToAdvance[step] != -1) {
     if (((millis() - TimeSinceLastStep) / (1000)) > TimeToAdvance[step]) { // Measure in seconds
       step += 1;
+        if (step == prot_size) {
+          retract_lever('r');
+          retract_lever('l');
+          final_finish = true;
+          return;
+        }
       num_presses = 0;
-      retract_lever('r');
-      retract_lever('l');
+      consec_right = 0;
+      consec_left = 0;
       start_round = false;
       TimeSinceLastStep = millis();
       Serial.print("next step ");
@@ -220,49 +271,51 @@ correct for new IR emitter/reciever pairs. Signals may begin to fluctuate around
 values if the emitter/reciever pairs get degraded (e.g. chewed). This can appear as erratic 
 nose in/out signals or as lagging in python recordings
 */
-void measure_ir() {
+char measure_ir() {
   int irValue = analogRead(detect_signal);
   //Serial.println(irValue);
-  if ((irValue < 20) and (ir_broken == false)) {
+  if ((irValue < 300) and (ir_broken == false)) {
     if (no_single_ir_in > 5){
       Serial.print("nose_in ");
       send_report();
       ir_broken = true;
-      if (lever_out == false) {
-        start_round = true;
-      }
+      return 'i';
+      //if (lever_out == false) {
+      //  start_round = true;
+      //}
     }
     else {
       no_single_ir_in += 1;
     }
   }
-  if (irValue < 20) {
+  if (irValue < 300) {
     no_single_ir = 0;
   }
-  if ((irValue > 25) and (ir_broken == true)) {
+  if ((irValue > 700) and (ir_broken == true)) {
     if (no_single_ir > 5) {
       Serial.print("nose_out ");
       send_report();
       no_single_ir = 0;
-      ir_broken = false;  
+      ir_broken = false;
+      return 'o';
     }
     else {
       no_single_ir += 1;
     }
   }
-  if (irValue > 25) {
+  if (irValue > 700) {
     no_single_ir_in = 0;
   }
 }
 
 /*
-Dispenser requires a rising/falling edge so we time a quick HIGH/LOW switch outside the main loop
-An LED illuminatng the food bin upon reward also gets timed outside the loop
+First checks for a signal that tells us to dispense food. If so, brings the dispenser 28v line to high and 
+starts a timer. Once the timer passes a threshold, the 28v line is dropped back to low and the signal is reset.
 */
 void check_food() {
   //Serial.println("chec food");
-  if (food_delay) {
-    if ((millis() - food_delay_timer) < food_delay_thresh) {
+  if (food_signal) {
+    if ((millis() - food_delay_timer) < food_delay_thresh) { // Dispenser requires a rising/falling edge so we time a quick HIGH/LOW switch
       return;
     }
     else if (dispense_on == false) {
@@ -276,41 +329,110 @@ void check_food() {
     else if ((millis() - dispense_time) > 5){
       digitalWrite(dispense_control, LOW);
       dispense_on = false;    
-      food_delay = false;  
-      Serial.println("rewarded");
+      food_signal = false;  
     }
   }
-  if ((millis() - food_light_time) > 3000) {
-  digitalWrite(food_light, LOW);
-  food_light_time = 0;
-  }
+  //if ((millis() - food_light_time) > 3000) {
+  //digitalWrite(food_light, LOW);
+  //food_light_time = 0;
+  //}
 }
 
 /*
 Will not dispense if one lever is used 5 times or more, consecutively, useful during training when both levers are 100% rewarded
 If this behavior is not desired, remove "&& consec_right < 5" from below, or change to a different number of consecutive presses
 */
-void reward_calculation(){
-  long r = random(100);
-  if (session_press == 1) {
-    if (r < RightLeverProb[step] && consec_right < max_consec[step]) {
-      food_delay = true; // handle in func
-      food_delay_timer = millis(); // handle in func
-      num_presses += 1;
-    }  
-    else {
-      return;
-    }
+void reward_calculation(char lever){
+  if (lever == 'n') {
+    Serial.println("no reward dispensed");
+    return;
   }
-  else if (session_press == 2) {
-    if (r < LeftLeverProb[step] && consec_left < max_consec[step]) {
-      food_delay = true;
-      food_delay_timer = millis();
-      num_presses += 1;
+  int high_prob;
+  int low_prob;
+  if (scrambled_state) {
+    //Serial.println(high_lever);
+    if (RightLeverProb[step] > LeftLeverProb[step]) {
+      high_prob = RightLeverProb[step];
+      low_prob = LeftLeverProb[step];
+    }
+    else if (LeftLeverProb[step] > RightLeverProb[step]) {
+      high_prob = LeftLeverProb[step];
+      low_prob = RightLeverProb[step];
     }
     else {
-      return;
+      high_prob = RightLeverProb[step];
+      low_prob = RightLeverProb[step];
     }
+    Serial.print("high prob lever: ");
+    Serial.println(high_prob);
+    Serial.print("low prob lever: ");
+    Serial.println(low_prob);
+    long r = random(100);
+    if (lever == high_lever) {
+      Serial.println("high lever chosen");
+      if (r < high_prob) {
+        food_signal = true;
+        food_delay_timer = millis();
+        num_presses += 1;
+        cum_presses += 1;
+        Serial.println("high lever rewarded");
+      }
+    }
+    else {
+      Serial.println("low lever chosen");
+      if (r < low_prob) {
+        food_signal = true;
+        food_delay_timer = millis();
+        num_presses += 1;
+        cum_presses += 1;
+        Serial.println("low lever rewarded");
+      }
+    }
+    return;
+  }
+  int lever_prob;
+  if (lever == 'r') {
+    lever_prob = RightLeverProb[step];
+  }
+  else {
+    lever_prob = LeftLeverProb[step];
+  }
+  long r = random(100);
+  if (r < lever_prob) {
+    food_signal = true;
+    food_delay_timer = millis();
+    num_presses += 1;
+    cum_presses += 1;
+    Serial.println("rewarded");
+  }
+}
+
+char scramble_levers(){
+  long random_lever = random(100);
+  if (random_lever < 50) {
+    high_lever = 'r';
+  }
+  else {
+    high_lever = 'l';
+  }
+  return high_lever;
+}
+
+void flicker(int which) {
+  static unsigned long timer = millis();
+  static bool status_on = false;
+  if (millis() - timer > 200) {
+    if (status_on) {
+      digitalWrite(which, LOW);
+      status_on = false;
+      //Serial.println("off");
+    }
+    else {
+      digitalWrite(which, HIGH);
+      status_on = true;
+      //Serial.println("on");
+    }
+    timer = millis();
   }
 }
 
@@ -320,12 +442,12 @@ Extend levers
 void extend_lever(char side){
   if (side == 'r') {
     digitalWrite(right_lever_control, HIGH);
-    digitalWrite(right_led, HIGH);
+    //digitalWrite(right_led, HIGH);
     //Serial.print("extending right");
   }
   if (side == 'l') {
     digitalWrite(left_lever_control, HIGH);
-    digitalWrite(left_led, HIGH);
+    //digitalWrite(left_led, HIGH);
     //Serial.print("extending left");
   }
   //send_report();
@@ -334,7 +456,8 @@ void extend_lever(char side){
 }
 
 /*
-Pull levers in, reset lever-related variables
+Pull levers in, reset lever-related variables EXCEPT for session_press
+as that is critical for reward_calculation
 */
 void retract_lever(char side){
   //Serial.println("retractintime");
@@ -357,7 +480,8 @@ void retract_lever(char side){
   completed_cycles_left = 0;
   lever_depressed_right = false;
   lever_depressed_left = false;
-  //last_time = millis();
+  right_lever = false;
+  left_lever = false;
 }
 
 /*
@@ -369,13 +493,13 @@ which causes the lever presentation to finish prematurely. Not sure why this hap
 than others. To remedy this, we use the same no_single_(signal) scheme used in ir_control, where a signal ON
 (or additionally in this case, OFF) requires five repeated presentations before it is considered a true signal. 
 */
-void read_lever(char side){
-  //Serial.println("readlever");
+bool read_lever(char side){
   if (side == 'r') {
     sensorValue = analogRead(right_lever_report);
     float voltage = sensorValue * (5.0 / 1023.0);
     if ((voltage < 0.5) && (not lever_depressed_right)) {
       if (no_single_lever_right > 5) {
+        //Serial.println("a big press has been achieved");
         lever_depressed_right = true;
         Serial.print("r_pr ");
         send_report();
@@ -392,21 +516,25 @@ void read_lever(char side){
           session_press = 1;
           consec_right += 1;
           consec_left = 0;
+          return true;
         }
       }
       else {
+        //Serial.println("counting up to a big press");
         no_single_lever_right += 1;
         no_single_lever_off_right = 0;
       }
     }
     else if ((voltage > 0.5) && (lever_depressed_right)) {
       if (no_single_lever_off_right > 5) {
+        //Serial.println("big release detected");
         completed_cycles_right += 1;
         //Serial.print("r_off");
         //send_report();
         lever_depressed_right = false; 
       }
       else if (voltage > 0.5) {
+        //Serial.println("counting down to a big release");
       no_single_lever_right = 0;
       no_single_lever_off_right += 1;
       }
@@ -433,6 +561,7 @@ void read_lever(char side){
           session_press = 2;
           consec_left += 1;
           consec_right = 0;
+          return true;
         }
       }
       else {
@@ -453,6 +582,21 @@ void read_lever(char side){
       }
     }
   }
+  return false;
+}
+
+bool check_repeat_presses(char lever) {
+  if (lever == 'r') {
+    if (consec_right > max_consec[step]) {
+      return true;
+    }
+  }
+  if (lever == 'l') {
+    if (consec_left > max_consec[step]) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /*
@@ -493,8 +637,8 @@ void status_check() {
   Serial.print("session_press = ");
   Serial.println(session_press);
   
-  if (food_delay) {
-    Serial.println("food_delay!");
+  if (food_signal) {
+    Serial.println("food_signal!");
   }
   else {
     Serial.println("no food delay");
@@ -555,6 +699,8 @@ void protocol_setup() {
   fill_array(cycles_required_right);
   fill_array(cycles_required_left);
   fill_array(max_consec);
+  fill_array(lever_timeout);
+  fill_array(ir_timeout);
 }
 
 void get_size() {

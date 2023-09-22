@@ -148,6 +148,7 @@ void loop() {
   Serial.println("waiting for nose in");
   digitalWrite(food_light, LOW);
   while (true) {
+    check_switch();
     char signal = measure_ir();
     if (signal == 'i') {
       break;
@@ -184,6 +185,7 @@ void loop() {
   Serial.println("waiting for lever press");
   unsigned long time = millis();
   while (true){
+    check_switch();
     char signal = measure_ir();
     flicker(flicker_led);
     if (RightLeverOut[step] != 0) {
@@ -231,6 +233,7 @@ Check two conditions (number of presses since start of step, time since step sta
 to determine whether to move on to the next step
 */
 void check_switch() {
+  if (final_finish) {return;}
   if (PressToAdvance[step] != -1) {
     if (num_presses > PressToAdvance[step]) {
       step += 1;

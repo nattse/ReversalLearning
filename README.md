@@ -5,34 +5,52 @@ This specific code repository is for a reversal learning task.
 
 ## First time setup
 These instructions assume you have downloaded this repository, the necessary packages, and the Arduino IDE. 
-Connect the Arduino and use the IDE to upload *combined_recieve_and_execute.ino* to the Arduino. At this point also note the port the Arduino is on (e.g. COM**2**), as you will need to manually enter this into your config file. Plug in the USB camera next and use `v4l2-ctl --list-devices` to get the device number (e.g. /dev/video**2**).
 
-## Before each run
-All experiment conditions are set beforehand in the *config.csv* file. Each column represents the conditions for that stage of the experiment, and an experiment can contain as many stages as desired, each with their own unique conditions. Once video recording has begun, the procedure in any stage is as follows:
+The only thing in the code that needs to be changed is in `measure_ir()` in combined_recieve_and_execute.ino
+The irValue is compared to two different numbers at these four lines: 
+
+`if ((irValue < 300) and (ir_broken == false)) {`
+
+`if (irValue < 300) {`
+
+`if ((irValue > 700) and (ir_broken == true)) {`
+
+`if (irValue > 700) {`
+
+If irValue is below the low number, the beam is considered broken. If it higher than the large number, the beam is considered not broken.
+The baseline irValue is different for every setup, and the appropriate threshold values vary as well. Use send_recieve_dummy.ino to get a readout of your setup's irValue. Stick your finger in the food bin and see what the values drop to, and set this as the lower threshold (replace `300` in `if ((irValue < 300) and (ir_broken == false)) {` and `if (irValue < 300) {` with your new number). While your finger is in there, notice how much the values can fluctuate. You want to set your higher threshold to be significantly greater than the largest fluctuation. So if baseline readings are at 100, then when you stick your finger in, the irValue bounces between 0 and 11, replace `700` in the above code with 30. 
+
+## Basic procedure employed
+
+Once video recording has begun, the procedure is as follows:
 - Nose poke into the food receptacle begins the trial
 - Levers are presented
 - Upon lever press, all levers are retracted
-- Food pellet is dispensed depending on the pressed lever's probability of reward (or if that same lever has been pressed 5 or more times in a row; see function reward_calculation() in combined_recieve_and_execute.ino to turn off)
-- New trial initiation is blocked for three seconds after reward is dispensed (*need to consider that a mouse may be slow to retrieve the food at first and so may trigger a new trial upon retrieval - something we'll need to work out through trial and error*)
-- Check to see if ready to move to next stage, and if so, change conditions (e.g. levers presented/reward probability) according to the next stage. Otherwise, wait for nose poke to begin another trial
+- Food pellet is dispensed depending on the pressed lever's probability of reward and whether the limit on consecutive lever presses has been hit
+- New trial initiation is blocked for three seconds after reward is dispensed
+- Check to see if ending conditions have been met; if not, wait for nose poke to begin another trial
 
-### Using config.csv
+## Before each run
 
-**Right Lever Out** | yes/no | Determines whether the right lever is presented 
+### Checking Camera ID and Arduino ID
+Connect the Arduino and use the IDE to upload *combined_recieve_and_execute.ino* to the Arduino. At this point also note the port the Arduino is on (e.g. COM**2**), and check that this matches the Arduino designated in the config file. Plug in the USB camera next and use `v4l2-ctl --list-devices` to get the device number (e.g. /dev/video**2**).
 
-**Right Lever Reward %** | 0-100 | Determines the probability of a food reward being dispensed
+## Running the experiment
+Using Terminal, move to where *working_send_and_recieve.py* is located stored using `cd`. Run `python3 working_send_and_recieve.py config_file filename` replacing config_file with either *training_1, training_2, reversal, random*, depending on the protocol you want to use. Replace filename with whatever you want the resulting .txt and video files to be titled. 
 
-**Left Lever Out** | yes/no | Same as Right Lever Out
+Config files that correspond to the different protocols are stored in the ./configs directory. By default, the *training_1, training_2, reversal, random* configs should not be altered except to enter a new Arduino ID or Camera ID if they change.
 
-**Left Lever Reward %** | 0-100 | Same as Right Lever Reward
+Custom config files can be created to alter specific settings, and settings can be made to automatically change throughout a single experiment by adding on additional stages. These additional stages can be entered into the custom config file by adding new columns of settings to the right of the original settings.
 
-**Presses to trigger right lever** | any positive integer | How many times a lever needs to be pressed in order to "count"; levers will not retract and reward will not be calculated until this threshold number of presses is reached
+### Config settings 
 
-**Presses to trigger left lever** | any positive integer | Same as above
+**Right/Left Lever Out** | yes/no/random | Determines whether the right or left lever is presented. See random for random
+
+**Right/Left Lever Reward %** | 0-100 | Determines the probability of a food reward being dispensed for that lever. See random for how reward payouts are handled during random rounds
+
+**Presses to trigger right/left lever** | any positive integer | How many times a lever needs to be pressed in order to "count"; levers will not retract and reward will not be calculated until this threshold number of presses is reached
 
 **Max rewarded consecutive presses** | any positive integer | Number of consecutive presses after which reward for the over-pressed lever will be ceased until other lever is pressed
-
-**Switch stage at** | Unused row 
 
 **Number of presses** | any positive integer or -1 | Total number of lever presses needed to advance to the next stage. (Set to -1 if you only want to consider **Duration**)
 
@@ -42,30 +60,16 @@ All experiment conditions are set beforehand in the *config.csv* file. Each colu
 
 **Cam ID** | any integer | `v4l2-ctl --list-devices`. Only need to enter this in the first column
 
+**Filepath** | any directory | Output data location
+
+**Lever Timeout** | any integer; default = -1 | How many seconds the lever will stay out once presented. Once this time is up, levers will retract and no reward will be dispensed. Set to -1 to not use this feature
+
+**IR Timeout** | any integer; default = 3 | After reward is calculated, breaking the IR beam in the food bin will not trigger the levers for this number of seconds
 ____________________________________________________________________________________________________________________________
 
-An example config.csv would be as follows:
-
-|  | Stage 1 | Stage 2 |
-| :---         |     :---:      |          ---: |
-| Right Lever Out  |yes|yes|
-| Right Lever Reward % |100|50|
-| Left Lever Out |yes|yes|
-| Left Lever Reward % |100|75|
-| Presses to trigger right lever | 2 | 2 |
-| Presses to trigger left lever | 2 | 2 |
-| Switch stage at: |||
-| Number of presses |10|30|
-| Duration |600|-1|
-| Arduino ID Port |0||
-| Cam ID |2||
-
-Using this configuration, we would start at Stage 1 with both levers being presented - after two presses to either lever, reward would be dispensed 100% of the time. This would last for 600 seconds or 10 presses, whichever is reached first - after which we switch to Stage 2. In this stage both levers are still presented and both must be pressed twice to count, but the reward probability of the right lever drops to 50%, and the left lever drops to 75%. After 30 lever presses (regardless of how long it takes), all processes are stopped and the video recording ends. 
-
-## Running the experiment
-Using Terminal, move to where these files are stored using `cd`. Run `python3 working_send_and_recieve.py filename` replacing filename with whatever you want the resulting .csv and video files to be titled. 
-
 ## Output 
+
+Read .txt file using `df = pd.read_csv(file, sep = '\t', skiprows=3, header = None)` where file is the filename.
 
 **nose_in/nose_out 00:00:000** > nose entry/exit to food bin
 
@@ -73,7 +77,7 @@ Using Terminal, move to where these files are stored using `cd`. Run `python3 wo
 
 **r_on/l_on 00:00:000** > right/left lever press that reached threshold and triggered lever retraction and reward calculation
 
-**rewarded** > denotes whether a reward was dispensed followng an r_on/l_on event
+**rewarded** > denotes whether a reward was dispensed following an r_on/l_on event
 
 **next step 00:00:000** > denotes the step has been incremented
 
