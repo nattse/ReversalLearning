@@ -60,6 +60,8 @@ Custom config files can be created to alter specific settings, and settings can 
 
 **Cam ID** | any integer | `v4l2-ctl --list-devices`. Only need to enter this in the first column
 
+**Filepath** | any directory | Output data location
+
 **Lever Timeout** | any integer; default = -1 | How many seconds the lever will stay out once presented. Once this time is up, levers will retract and no reward will be dispensed. Set to -1 to not use this feature
 
 **IR Timeout** | any integer; default = 3 | After reward is calculated, breaking the IR beam in the food bin will not trigger the levers for this number of seconds
@@ -75,7 +77,7 @@ Read .txt file using `df = pd.read_csv(file, sep = '\t', skiprows=3, header = No
 
 **r_on/l_on 00:00:000** > right/left lever press that reached threshold and triggered lever retraction and reward calculation
 
-**rewarded** > denotes whether a reward was dispensed followng an r_on/l_on event
+**rewarded** > denotes whether a reward was dispensed following an r_on/l_on event
 
 **next step 00:00:000** > denotes the step has been incremented
 
