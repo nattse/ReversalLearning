@@ -78,7 +78,13 @@ These instructions assume you have downloaded this repository, the necessary pac
 
 External components: Left/right lever, food dispenser, IR emitter, IR receiver, right/left LED
 
-To save space, we wired as many components as possible directly on an Arduino Proto Shield
+To save space, we wired as many components as possible directly on an Arduino Proto Shield. Components fall into three groups, identified by matching colors in the images below:
+
+<img src="https://github.com/nattse/ReversalLearning/blob/main/docs/operant_chamber_wiring_color_coded.png" width="400"> <img src="https://github.com/nattse/ReversalLearning/blob/main/docs/shield_fully_wired_color_coded.jpg" width="400">
+
+<p align="center">
+Lever reading (yellow), LED control (blue), IR nose detection (green)
+</p>
 
 ## Hardware
 
