@@ -3,22 +3,7 @@ Behavioral tasks such as sign tracking and reversal learning are complex both in
 
 This specific code repository is for a reversal learning task.
 
-## First time setup
-These instructions assume you have downloaded this repository, the necessary packages, and the Arduino IDE. 
-
-The only thing in the code that needs to be changed is in `measure_ir()` in combined_recieve_and_execute.ino
-The irValue is compared to two different numbers at these four lines: 
-
-`if ((irValue < 300) and (ir_broken == false)) {`
-
-`if (irValue < 300) {`
-
-`if ((irValue > 700) and (ir_broken == true)) {`
-
-`if (irValue > 700) {`
-
-If irValue is below the low number, the beam is considered broken. If it higher than the large number, the beam is considered not broken.
-The baseline irValue is different for every setup, and the appropriate threshold values vary as well. Use send_recieve_dummy.ino to get a readout of your setup's irValue. Stick your finger in the food bin and see what the values drop to, and set this as the lower threshold (replace `300` in `if ((irValue < 300) and (ir_broken == false)) {` and `if (irValue < 300) {` with your new number). While your finger is in there, notice how much the values can fluctuate. You want to set your higher threshold to be significantly greater than the largest fluctuation. So if baseline readings are at 100, then when you stick your finger in, the irValue bounces between 0 and 11, replace `700` in the above code with 30. 
+[Setup info](#first-time-setup)
 
 ## Basic procedure employed
 
@@ -69,13 +54,13 @@ ________________________________________________________________________________
 
 ## Output 
 
-Read .txt file using `df = pd.read_csv(file, sep = '\t', skiprows=3, header = None)` where file is the filename.
+Read .txt file in python using `df = pd.read_csv(file, sep = '\t', skiprows=3, header = None)` where file is the filename.
 
 **nose_in/nose_out 00:00:000** > nose entry/exit to food bin
 
-**r_pr/l_pr 00:00:000** > right/left lever press that are sub-threshold and didn't trigger lever retraction/reward calculation
+**r_pr/l_pr 00:00:000** > right/left lever press that are sub-threshold (< **presses to trigger**) and didn't trigger lever retraction/reward calculation
 
-**r_on/l_on 00:00:000** > right/left lever press that reached threshold and triggered lever retraction and reward calculation
+**r_on/l_on 00:00:000** > right/left lever press that reached threshold (== **presses to trigger**) and triggered lever retraction and reward calculation
 
 **rewarded** > denotes whether a reward was dispensed following an r_on/l_on event
 
@@ -83,7 +68,11 @@ Read .txt file using `df = pd.read_csv(file, sep = '\t', skiprows=3, header = No
 
 **complete end** > end of protocol
 
-# Operant Conditioning Chamber Wiring Diagram
+# First time setup
+
+These instructions assume you have downloaded this repository, the necessary packages, and the Arduino IDE. 
+
+## Hardware
 
 Levers: **Med Associates ENV-312-3 Retractable Mouse Lever**
 
@@ -93,7 +82,26 @@ Relays: **[HiLetgo 5V One Channel Relay Module With optocoupler Support High or 
 
 IR Emitter and Receiver: **[Chanzon 5mm IR Infrared LED Diode Emitter + Receiver](https://www.amazon.com/Emitter-Receiver-VS1838B-Infrared-Raspberry/dp/B07TLBJR5J?th=1)**
 
+Food Receptacle: **[Trough Pellet Receptacle](https://med-associates.com/product/trough-pellet-receptacle/)**
+
+Food Receptacle Cover: Download and 3D print using feeder_cover.stl file. Designed by me
+
+
+
 ![operant_chamber_wiring](https://user-images.githubusercontent.com/118491380/227418044-cb065a87-e8b8-4a8a-904e-f67036c5ebf5.png)
 
 ![chamber_image](https://user-images.githubusercontent.com/118491380/227365957-fa8b2439-1884-4f26-b954-e5c664bc3012.jpg)
 
+The only thing in the code that needs to be changed is in `measure_ir()` in combined_recieve_and_execute.ino
+The irValue is compared to two different numbers at these four lines: 
+
+`if ((irValue < 300) and (ir_broken == false)) {`
+
+`if (irValue < 300) {`
+
+`if ((irValue > 700) and (ir_broken == true)) {`
+
+`if (irValue > 700) {`
+
+If irValue is below the low number, the beam is considered broken. If it higher than the large number, the beam is considered not broken.
+The baseline irValue is different for every setup, and the appropriate threshold values vary as well. Use send_recieve_dummy.ino to get a readout of your setup's irValue. Stick your finger in the food bin and see what the values drop to, and set this as the lower threshold (replace `300` in `if ((irValue < 300) and (ir_broken == false)) {` and `if (irValue < 300) {` with your new number). While your finger is in there, notice how much the values can fluctuate. You want to set your higher threshold to be significantly greater than the largest fluctuation. So if baseline readings are at 100, then when you stick your finger in, the irValue bounces between 0 and 11, replace `700` in the above code with 30. 
