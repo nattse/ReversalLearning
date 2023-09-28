@@ -3,7 +3,7 @@ Behavioral tasks such as sign tracking and reversal learning are complex both in
 
 This specific code repository is for a reversal learning task.
 
-[Setup info](#first-time-setup)
+[Building the system](#building-the-system)
 
 ## Basic procedure employed
 
@@ -68,7 +68,7 @@ Read .txt file in python using `df = pd.read_csv(file, sep = '\t', skiprows=3, h
 
 **complete end** > end of protocol
 
-# First time setup
+# Building The System
 
 These instructions assume you have downloaded this repository, the necessary packages, and the Arduino IDE. 
 
@@ -76,8 +76,13 @@ These instructions assume you have downloaded this repository, the necessary pac
 
 Any wiring system that matches the schematic below can be used, but we have provided instructions for replicating our setup below.
 
+<p align="center">
+ 
 ![operant_chamber_wiring](https://user-images.githubusercontent.com/118491380/227418044-cb065a87-e8b8-4a8a-904e-f67036c5ebf5.png)
-
+<p align="center">
+Wiring schematic
+</p>
+ 
 We considered components inside our light-attenuating cabinets to be peripheral components, and those outside the cabinets to be central components (given their proximity to the laptop on which everything was run). 
 
 Peripheral components: Left/right lever, food dispenser, IR emitter, IR receiver, right/left LED, camera
@@ -114,7 +119,10 @@ Food Receptacle: **[Med Associates ENV-303W Trough Pellet Receptacle](https://me
 
 Food Receptacle Cover: Download and 3D print using feeder_cover.stl file. Designed by me
 
+<p align="center">
 <img src="https://github.com/nattse/ReversalLearning/blob/main/docs/alone.jpg" width="300"> <img src="https://github.com/nattse/ReversalLearning/blob/main/docs/sep.jpg" width="300"> <img src="https://github.com/nattse/ReversalLearning/blob/main/docs/combined.jpg" width="300">
+</p>
+
 
 1. Orient the food receptical cover so that the two circular holes are closest to the mouth of the food receptical, then align the four grooves on the inside of the food receptical cover with the four screws on the sides of the food receptical, then push down until fully seated. Insert IR emitter and receiver into circular holes (sides do not matter). Fix in place with small amount of hot glue or tape if needed. Then levers, food dispenser, and food receptacle should be set up according to your chamber's design. [Calibrate IR beam break system](#ir-nose-detection-calibration).
 2. Fix left/right LEDs above the respective levers using hot glue or tape. Check that lever LEDs illuminate the correct lever by setting a config.xlsx to extend one lever at a time.
@@ -122,10 +130,11 @@ Food Receptacle Cover: Download and 3D print using feeder_cover.stl file. Design
  
 
 
-
-
-
-![chamber_image](https://user-images.githubusercontent.com/118491380/227365957-fa8b2439-1884-4f26-b954-e5c664bc3012.jpg)
+<p align="center">
+<img src="https://github.com/nattse/ReversalLearning/blob/main/docs/chamber_image.jpeg" width="300">
+ <p align="center">
+  Camera placed above chamber
+</p>
 
 # IR nose detection calibration
 
@@ -146,25 +155,25 @@ The baseline irValue is different for every setup, and the appropriate threshold
 # Example calibration
 
 <p align="center">
-<img src="https://github.com/nattse/ReversalLearning/blob/main/docs/baseline.jpg" height="400">
+<img src="https://github.com/nattse/ReversalLearning/blob/main/docs/baseline.jpg" width="700">
 <p align="center">
 Baseline ~994 
 </p>
 
 <p align="center">
-<img src="https://github.com/nattse/ReversalLearning/blob/main/docs/nose_in.jpg" height="400">
+<img src="https://github.com/nattse/ReversalLearning/blob/main/docs/nose_in.jpg" width="700">
 <p align="center">
 Upon nose poke, signal value drops to <200
 </p>
 
 <p align="center">
-<img src="https://github.com/nattse/ReversalLearning/blob/main/docs/nose_out.jpg" height="400">
+<img src="https://github.com/nattse/ReversalLearning/blob/main/docs/nose_out.jpg" width="700">
 <p align="center">
 Upon withdrawl, signal value returns to baseline
 </p>
 
 <p align="center">
-<img src="https://github.com/nattse/ReversalLearning/blob/main/docs/thresholding.jpeg" height="400">
+<img src="https://github.com/nattse/ReversalLearning/blob/main/docs/thresholding.jpeg" width="700">
 <p align="center">
 Acceptable threshold values at 800 and 200
 </p>
