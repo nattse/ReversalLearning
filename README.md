@@ -86,7 +86,11 @@ Food Receptacle: **[Trough Pellet Receptacle](https://med-associates.com/product
 
 Food Receptacle Cover: Download and 3D print using feeder_cover.stl file. Designed by me
 
+<img src="https://github.com/nattse/ReversalLearning/blob/main/docs/alone.jpg" width="300"> <img src="https://github.com/nattse/ReversalLearning/blob/main/docs/sep.jpg" width="300"> <img src="https://github.com/nattse/ReversalLearning/blob/main/docs/combined.jpg" width="300">
 
+## Wiring
+
+T
 
 ![operant_chamber_wiring](https://user-images.githubusercontent.com/118491380/227418044-cb065a87-e8b8-4a8a-904e-f67036c5ebf5.png)
 
