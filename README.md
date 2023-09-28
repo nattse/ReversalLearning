@@ -72,6 +72,14 @@ Read .txt file in python using `df = pd.read_csv(file, sep = '\t', skiprows=3, h
 
 These instructions assume you have downloaded this repository, the necessary packages, and the Arduino IDE. 
 
+## Wiring
+
+![operant_chamber_wiring](https://user-images.githubusercontent.com/118491380/227418044-cb065a87-e8b8-4a8a-904e-f67036c5ebf5.png)
+
+External components: Left/right lever, food dispenser, IR emitter, IR receiver, right/left LED
+
+To save space, we wired as many components as possible directly on an Arduino Proto Shield
+
 ## Hardware
 
 Levers: **Med Associates ENV-312-3 Retractable Mouse Lever**
@@ -88,13 +96,18 @@ Food Receptacle Cover: Download and 3D print using feeder_cover.stl file. Design
 
 <img src="https://github.com/nattse/ReversalLearning/blob/main/docs/alone.jpg" width="300"> <img src="https://github.com/nattse/ReversalLearning/blob/main/docs/sep.jpg" width="300"> <img src="https://github.com/nattse/ReversalLearning/blob/main/docs/combined.jpg" width="300">
 
-## Wiring
+1. Orient the food receptical cover so that the two circular holes are closest to the mouth of the food receptical, then align the four grooves on the inside of the food receptical cover with the four screws on the sides of the food receptical, then push down until fully seated. Insert IR emitter and receiver into circular holes (sides do not matter). Fix in place with small amount of hot glue or tape if needed. Then levers, food dispenser, and food receptacle should be set up according to your chamber's design. [Calibrate IR beam break system](#ir-nose-detection-calibration).
+2. Fix left/right LEDs above the respective levers using hot glue or tape. Check that lever LEDs illuminate the correct lever by setting a config.xlsx to extend one lever at a time.
 
-T
+ 
 
-![operant_chamber_wiring](https://user-images.githubusercontent.com/118491380/227418044-cb065a87-e8b8-4a8a-904e-f67036c5ebf5.png)
+
+
+
 
 ![chamber_image](https://user-images.githubusercontent.com/118491380/227365957-fa8b2439-1884-4f26-b954-e5c664bc3012.jpg)
+
+# IR nose detection calibration
 
 The only thing in the code that needs to be changed is in `measure_ir()` in combined_recieve_and_execute.ino
 The irValue is compared to two different numbers at these four lines: 
