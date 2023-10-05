@@ -50,6 +50,12 @@ max_presses = [int(i) + 1 for i in instructions.loc['Max rewarded consecutive pr
 lever_timeout = utils.check_config_advanced(instructions)['Lever Timeout']
 ir_timeout = utils.check_config_advanced(instructions)['IR Timeout']
 
+try:
+    right_bias = [int(i) for i in instructions.loc['Right Lever Bias'].values]
+except KeyError:
+    print('No bias value entered; using default of 50')
+    right_bias = [50] * steps
+
 plan_details = [steps,
                 right_out,
                 right_prob,
@@ -61,7 +67,9 @@ plan_details = [steps,
                 cycles_required_left,
                 max_presses,
                 lever_timeout,
-                ir_timeout]
+                ir_timeout,
+                right_bias]
+
 for a in plan_details:
     print(a)
 ard_number = instructions.loc['Arduino ID Port'].iloc[0]
