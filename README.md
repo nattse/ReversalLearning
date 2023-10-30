@@ -70,7 +70,7 @@ Read .txt file in python using `df = pd.read_csv(file, sep = '\t', skiprows=3, h
 
 # Building The System
 
-These instructions assume you have downloaded this repository, the necessary packages, and the Arduino IDE. 
+These instructions assume you have downloaded this repository and the Arduino IDE, and installed the necessary packages (instructions [here](https://github.com/nattse/ReversalLearning/blob/main/required_packages.txt)).
 
 ## Wiring
 

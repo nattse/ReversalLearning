@@ -12,7 +12,7 @@ sudo apt install vim
 sudo apt install avrdude
 
 
-pip:
+Install with pip:
 pandas
 numpy
 pyserial

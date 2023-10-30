@@ -15,6 +15,7 @@ int cycles_required_left[25] = {}; //{1, 1};
 int max_consec[25] = {}; //{100, 100};
 int lever_timeout[25] = {}; //{6000, 6000}; // How long the levers will stay presented; use -1 for no timeout
 int ir_timeout[25] = {}; //{3000, 3000}; // How long the ir beam can be broken after lever retraction without triggering a new lever presentation
+int right_bias[25] = {}; //{50, 100}; // Likelihood that the RIGHT lever will be chosen during randomizations
 //test variables
 //int prot_size = 1;
 //int RightLeverOut[] = {1};
@@ -409,7 +410,7 @@ void reward_calculation(char lever){
 
 char scramble_levers(){
   long random_lever = random(100);
-  if (random_lever < 50) {
+  if (random_lever < right_bias[step]) {
     high_lever = 'r';
   }
   else {
@@ -701,6 +702,7 @@ void protocol_setup() {
   fill_array(max_consec);
   fill_array(lever_timeout);
   fill_array(ir_timeout);
+  fill_array(right_bias);
 }
 
 void get_size() {
