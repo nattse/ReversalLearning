@@ -87,6 +87,7 @@ def arduino_setup():
     #ser = serial.Serial(f'/dev/cu.usbmodem11201', 9600, timeout=0.5)
     utils.send_and_check(ser, plan_details)
     log.write(f'Experiment plan succesfully transfered to Arduino:\n{plan_details}\n')
+    log.close()
     readouts = []
     while True:
         if serial_flag.is_set():
@@ -97,7 +98,8 @@ def arduino_setup():
             if reports == 'entering loop':
                 r_t_s = True
             print(reports)
-            log.write(f'{reports}\n')
+            with open(filename + '.txt', a) as log_file:
+                log_file.write(f'{reports}\n')
             if reports == "complete end":
                 program_done = True
                 break
