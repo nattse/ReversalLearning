@@ -47,6 +47,7 @@ cycles_required_right = [int(i) - 1 for i in instructions.loc['Presses to trigge
 cycles_required_left = [int(i) - 1 for i in instructions.loc['Presses to trigger left lever'].values]
 max_presses = [int(i) + 1 for i in instructions.loc['Max rewarded consecutive presses'].values]
 
+
 lever_timeout = utils.check_config_advanced(instructions)['Lever Timeout']
 ir_timeout = utils.check_config_advanced(instructions)['IR Timeout']
 
@@ -55,6 +56,11 @@ try:
 except KeyError:
     print('No bias value entered; using default of 50')
     right_bias = [50] * steps
+try:
+    uncouple = [utils.translate(i) for i in instructions.loc['Uncouple Lights and Levers'].values]
+except KeyError:
+    print('Uncoupling not specified; using default of No')
+    uncouple = [0] * steps
 
 plan_details = [steps,
                 right_out,
@@ -68,7 +74,8 @@ plan_details = [steps,
                 max_presses,
                 lever_timeout,
                 ir_timeout,
-                right_bias]
+                right_bias,
+                uncouple]
 
 for a in plan_details:
     print(a)
@@ -98,7 +105,7 @@ def arduino_setup():
             if reports == 'entering loop':
                 r_t_s = True
             print(reports)
-            with open(filename + '.txt', a) as log_file:
+            with open(filename + '.txt', 'a') as log_file:
                 log_file.write(f'{reports}\n')
             if reports == "complete end":
                 program_done = True
