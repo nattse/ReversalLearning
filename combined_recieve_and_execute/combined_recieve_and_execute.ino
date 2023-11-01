@@ -16,6 +16,7 @@ int max_consec[25] = {}; //{100, 100};
 int lever_timeout[25] = {}; //{6000, 6000}; // How long the levers will stay presented; use -1 for no timeout
 int ir_timeout[25] = {}; //{3000, 3000}; // How long the ir beam can be broken after lever retraction without triggering a new lever presentation
 int right_bias[25] = {}; //{50, 100}; // Likelihood that the RIGHT lever will be chosen during randomizations
+int uncoupling[25] = {}; //{0, 0}; // When set to 1, lights will blink with right_bias randomness, but the levers will keep their config probabilities
 //test variables
 //int prot_size = 1;
 //int RightLeverOut[] = {1};
@@ -167,7 +168,17 @@ void loop() {
       digitalWrite(left_led, HIGH);
     }
   }
-
+  if (uncoupling[step] == 1) {
+    char led_to_flicker = scramble_levers(); // Use scramble_levers to set random LED to flicker (based on right_bias) but since we don't set scrambled_state = True, none of the reward process is affected
+    if (led_to_flicker == 'r') {
+      flicker_led = right_led;
+      Serial.println("right flickering");
+    }
+    else {
+      flicker_led = left_led;
+      Serial.println("left flickering");
+    }
+  }
   // Monitor levers up until a time limit. Activated lever has to be checked for too many repeats and is then passed on for reward calculation
   //Serial.println("waiting for lever press");
   unsigned long time = millis();
@@ -703,6 +714,7 @@ void protocol_setup() {
   fill_array(lever_timeout);
   fill_array(ir_timeout);
   fill_array(right_bias);
+  fill_array(uncoupling);
 }
 
 void get_size() {
